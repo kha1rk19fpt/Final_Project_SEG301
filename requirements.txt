@@ -1,3 +1,5 @@
 scrapy
-chromadb 
+chromadb
 sentence-transformers
+fastapi
+uvicorn
