@@ -4,8 +4,8 @@
 `pip install -r requirements.txt`
 
 ## Lấy dữ liệu:
-data/raw/ : `https://drive.google.com/drive/folders/1XXxsdiq8Z5xtVhfn3lMfn0Ymg8o4FHq4?usp=sharing`
-data/vector: Chạy lệnh sau để bắt đầu indexing(mất khoảng 1-2p): `python -m src.indexing.build_vector_db`
+- data/raw/ : `https://drive.google.com/drive/folders/1XXxsdiq8Z5xtVhfn3lMfn0Ymg8o4FHq4?usp=sharing`
+- data/vector: Chạy lệnh sau để bắt đầu indexing(mất khoảng 1-2p): `python -m src.indexing.build_vector_db`
 
 ## Chạy backend API
 - khởi động backend: `uvicorn src.backend.main:app --reload`
