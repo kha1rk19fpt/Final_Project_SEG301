@@ -1,7 +1,7 @@
 ## FINAL PROJECT SEG301
 
 # Cài đặt thư viện
-pip install -r requirements.txt
+`pip install -r requirements.txt`
 
 # Lấy dữ liệu:
 data/raw/ : `https://drive.google.com/drive/folders/1XXxsdiq8Z5xtVhfn3lMfn0Ymg8o4FHq4?usp=sharing`
