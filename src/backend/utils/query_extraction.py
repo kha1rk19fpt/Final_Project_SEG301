@@ -1,0 +1,41 @@
+import string 
+import nltk
+from rake_nltk import Rake
+from nltk.corpus import stopwords
+from nltk.tag import pos_tag
+
+try:
+    nltk.data.find('corpora/stopwords')
+    nltk.data.find('taggers/averaged_perceptron_tagger')
+except LookupError:
+    nltk.download('stopwords')
+    nltk.download('averaged_perceptron_tagger')
+
+class QueryExtraction:
+    def __init__(self):
+        self.rake = Rake(min_length=1, max_length=3)
+        self.stop_words = set(stopwords.words('english'))
+        custom_sw = {'want', 'know', 'find', 'tell', 'about', 'detail', 'information', 'what', 'how', 'why', 'who'}
+        self.stop_words.update(custom_sw)
+
+    def tokenization(raw_query:str)-> list:
+        lower_query = raw_query.lower()
+        tokens = lower_query.split()
+        return tokens
+
+    def extract(self, raw_query: str) -> dict:
+        self.rake.extract_keywords_from_text(raw_query)
+        rake_keywords = self.rake.get_ranked_phrases()[:3]
+        tokens = self.tokenization(raw_query)
+        clean_tokens = [token for token in tokens if token not in self.stop_words and token not in string.punctuation]
+        pos_tags = pos_tag(clean_tokens)
+        prim_keywords = [token for token, tag in pos_tags if tag.startswith('NN') or tag.startswith('JJ')]
+        if not prim_keywords:
+            prim_keywords = clean_tokens
+        combine_search_query = " ".join(set(rake_keywords + prim_keywords))
+        if not combine_search_query:
+            combine_search_query = raw_query
+        return {
+            'context': raw_query,
+            'search_keywords': combine_search_query
+        }

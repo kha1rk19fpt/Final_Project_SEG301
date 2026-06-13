@@ -3,3 +3,10 @@ chromadb
 sentence-transformers
 fastapi
 uvicorn
+pandas
+lxml
+markdownify
+langchain-experimental
+langchain-huggingface
+nltk
+rake-nltk
