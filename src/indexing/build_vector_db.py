@@ -1,5 +1,6 @@
 import json 
 import chromadb
+from tqdm import tqdm
 from chromadb.utils import embedding_functions
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -25,7 +26,7 @@ def main():
 
     #Semantic chunking
     chunk_id = 0
-    for article in data:
+    for article in tqdm(data, desc="The progress of semantic chunking"):
         title = article.get("title") or "Unknow title"
         url = article.get("url") or ""
         text = article.get("text") or ""
@@ -50,7 +51,7 @@ def main():
 
     #Vector embedding
     batch_size = 500
-    for i in range(0, len(docs), batch_size):
+    for i in tqdm(range(0, len(docs), batch_size), desc="The progress of Vector Embedding"):
         end_idx = min(i + batch_size, len(docs))
         collection.add(
             documents=docs[i:end_idx],
