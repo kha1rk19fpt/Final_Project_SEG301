@@ -46,6 +46,6 @@ class WikipediaSpider(scrapy.Spider):
             }
         all_links = response.css("div.mw-parser-output a::attr(href)").getall()
         for link in all_links:
-            if link.startswith("/wiki/") and not any(x in link for x in [":", "#", "Tập_tin", "Đặc_biệt"]):
+            if link.startswith("/wiki/") and not any(x in link for x in [":", "#", "Main_Page"]):
                 next_page = urljoin(response.url, link)
                 yield scrapy.Request(url=next_page, callback=self.parse)
