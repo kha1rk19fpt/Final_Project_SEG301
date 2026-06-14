@@ -2,6 +2,7 @@ import scrapy
 from urllib.parse import urljoin
 import pandas as pd
 from io import StringIO
+from markdownify import markdownify as md
 
 class WikipediaSpider(scrapy.Spider):
     name = "wiki_spider"
@@ -23,8 +24,11 @@ class WikipediaSpider(scrapy.Spider):
             title_element = response.css("h1#firstHeading *::text").get()
         title = title_element.strip() if title_element else "Unknown title"
         #Get content
-        paragraphs = response.css("div.mw-parser-output p *::text, div.mw-parser-output p::text").getall()
-        full_text = " ".join([p.strip() for p in paragraphs if p.strip()])
+        paragraphs = response.css("div.mw-parser-output").get()
+        if paragraphs:
+            full_text = md(paragraphs, strip=["a", "img"]).strip()
+        else:
+            full_text = ""
         #Get table
         table_dict = []
         try:
