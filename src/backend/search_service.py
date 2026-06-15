@@ -23,19 +23,17 @@ class SearchService:
         extracted_text = self.extraction.extract(query)
         search_kw = extracted_text.get("search_keywords", query)
         res = self.collection.query(
-            query_texts= search_kw,
+            query_texts=[search_kw],
             n_results= top_k
         )
         
-
         formatted_res = []
         if res["documents"] and len(res["documents"][0]) > 0:
             for i in range(len(res["documents"][0])):
-                doc_title = res["metadatas"][0][i].get('title', 'Unknow')
+                doc_title = res["metadatas"][0][i].get('title', 'Unknown')
                 doc_url = res["metadatas"][0][i].get('url', "")
-                doc_tables = res["metadatas"][0][i].get('tables', "")
                 doc_content = res["documents"][0][i]
-                md_path = self.md_formatter.save_to_markdown(title=doc_title,url=doc_url,tables_str=doc_tables,content=doc_content,chunk_idx=i)
+                md_path = self.md_formatter.save_to_markdown(title=doc_title, url=doc_url, content=doc_content, chunk_idx=i)
                 formatted_res.append({
                     "title": doc_title,
                     "url": doc_url,
