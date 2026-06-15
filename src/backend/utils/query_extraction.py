@@ -5,11 +5,17 @@ from nltk.corpus import stopwords
 from nltk.tag import pos_tag
 
 try:
+    nltk.data.find('tokenizers/punkt')
+    nltk.data.find('tokenizers/punkt_tab')
     nltk.data.find('corpora/stopwords')
     nltk.data.find('taggers/averaged_perceptron_tagger')
+    nltk.data.find('taggers/averaged_perceptron_tagger_eng')
 except LookupError:
+    nltk.download('punkt')
+    nltk.download('punkt_tab')
     nltk.download('stopwords')
     nltk.download('averaged_perceptron_tagger')
+    nltk.download('averaged_perceptron_tagger_eng')
 
 class QueryExtraction:
     def __init__(self):
@@ -18,7 +24,7 @@ class QueryExtraction:
         custom_sw = {'want', 'know', 'find', 'tell', 'about', 'detail', 'information', 'what', 'how', 'why', 'who'}
         self.stop_words.update(custom_sw)
 
-    def tokenization(raw_query:str)-> list:
+    def tokenization(self, raw_query:str)-> list:
         lower_query = raw_query.lower()
         tokens = lower_query.split()
         return tokens

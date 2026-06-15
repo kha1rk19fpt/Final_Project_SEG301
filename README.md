@@ -11,7 +11,7 @@
 2. Thực hiện lệnh sau để bắt đầu crawl: `scrapy crawl wiki_spider`
 
 ## Chạy backend API
-- khởi động backend: `uvicorn src.backend.main:app --reload`
+- khởi động backend(30-60s): `uvicorn src.backend.main:app --reload`
 - Truy cập vào địa chỉ này để kiểm tra đã kết nối API thành công chưa: `http://127.0.0.1:8000`
 - Truy cập vào địa chỉ này để sử dụng giao diện: `http://127.0.0.1:8000/docs`
 
