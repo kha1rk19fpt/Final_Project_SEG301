@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="WikiSearch – Semantic search engine for Wikipedia articles. Find accurate, ranked results instantly using natural language queries." />
+  <title>WikiSearch – Semantic Wikipedia Search Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- ── BACKGROUND PARTICLES ── -->
+  <div class="bg-particles" aria-hidden="true">
+    <span></span><span></span><span></span><span></span>
+    <span></span><span></span><span></span><span></span>
+  </div>
+
+  <!-- ── HEADER / HERO ── -->
+  <header class="hero" id="hero">
+    <div class="hero-logo">
+      <span class="logo-wiki">Wiki</span><span class="logo-search">Search</span>
+    </div>
+    <p class="hero-tagline">Semantic search across Wikipedia — powered by vector embeddings</p>
+
+    <!-- Search Bar -->
+    <form class="search-form" id="searchForm" role="search" aria-label="Search Wikipedia">
+      <div class="search-box">
+        <span class="search-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+        </span>
+        <input id="searchInput" type="search" class="search-input"
+          placeholder='Ask anything… e.g. "What is quantum entanglement?"' autocomplete="off"
+          aria-label="Search query" />
+        <div class="search-controls">
+          <label class="top-k-label" for="topKSelect" title="Number of results">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="8" y1="6" x2="21" y2="6" />
+              <line x1="8" y1="12" x2="21" y2="12" />
+              <line x1="8" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="3.01" y2="6" />
+              <line x1="3" y1="12" x2="3.01" y2="12" />
+              <line x1="3" y1="18" x2="3.01" y2="18" />
+            </svg>
+            Top
+          </label>
+          <select id="topKSelect" class="top-k-select" aria-label="Number of results">
+            <option value="3">3</option>
+            <option value="5" selected>5</option>
+            <option value="8">8</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+          </select>
+          <button id="searchBtn" type="submit" class="search-btn" aria-label="Search">
+            <span class="btn-text">Search</span>
+            <span class="btn-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </span>
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <!-- Query Pills (suggestions) -->
+    <div class="suggestions" id="suggestions" aria-label="Suggested queries">
+      <button class="pill" data-query="History of artificial intelligence">🤖 History of AI</button>
+      <button class="pill" data-query="How does photosynthesis work">🌿 Photosynthesis</button>
+      <button class="pill" data-query="What is black hole">🌌 Black Holes</button>
+      <button class="pill" data-query="The French Revolution causes">⚔️ French Revolution</button>
+      <button class="pill" data-query="DNA structure and function">🧬 DNA Structure</button>
+    </div>
+  </header>
+
+  <!-- ── RESULTS SECTION ── -->
+  <main class="results-section" id="resultsSection" role="main" aria-live="polite">
+
+    <!-- Status Bar -->
+    <div class="status-bar" id="statusBar" hidden>
+      <div class="status-left">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="statusText" class="status-text"></span>
+      </div>
+      <div class="status-meta">
+        <span class="meta-chip" id="metaQuery" title="Optimized search keyword"></span>
+        <span class="meta-chip time-chip" id="metaTime"></span>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" id="loadingState" hidden aria-label="Searching…">
+      <div class="spinner-ring">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+      <p class="loading-text">Searching through Wikipedia…</p>
+    </div>
+
+    <!-- Error State -->
+    <div class="error-state" id="errorState" hidden role="alert">
+      <div class="error-icon" aria-hidden="true">⚠️</div>
+      <h2 class="error-title">Connection Error</h2>
+      <p class="error-desc" id="errorDesc"></p>
+      <button class="retry-btn" id="retryBtn">Try Again</button>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" id="emptyState" hidden role="status">
+      <div class="empty-icon" aria-hidden="true">🔍</div>
+      <h2 class="empty-title">No results found</h2>
+      <p class="empty-desc">Try rephrasing your query or using different keywords.</p>
+    </div>
+
+    <!-- Results List -->
+    <div class="results-list" id="resultsList" role="list"></div>
+
+  </main>
+
+  <!-- ── FOOTER ── -->
+  <footer class="footer" id="footer">
+    <p>
+      <span class="footer-logo">WikiSearch</span> · SEG301 Final Project ·
+      <a href="http://127.0.0.1:8000/docs" target="_blank" rel="noopener" class="footer-link">API Docs</a>
+      · <a href="http://127.0.0.1:8000/health" target="_blank" rel="noopener" class="footer-link">Health</a>
+    </p>
+  </footer>
+
+  <!-- ── RESULT CARD TEMPLATE ── -->
+  <template id="resultCardTemplate">
+    <article class="result-card" role="listitem">
+      <div class="card-header">
+        <div class="rank-badge" aria-label="Rank"></div>
+        <div class="card-title-group">
+          <h2 class="card-title"></h2>
+          <a class="card-url" href="#" target="_blank" rel="noopener noreferrer"></a>
+        </div>
+        <div class="card-header-actions">
+          <!-- Source badge: full_article hoặc merged_chunks -->
+          <span class="source-badge" title="Content source"></span>
+          <button class="expand-btn" aria-expanded="false" aria-label="Expand article content">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <!-- Content preview -->
+        <div class="content-preview"></div>
+
+        <!-- Score Dashboard -->
+        <div class="score-dashboard">
+          <div class="score-card" title="Weighted relevance score (lower = more relevant)">
+            <div class="score-label">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+              Weighted Score
+            </div>
+            <div class="score-value weighted-score-val"></div>
+            <div class="score-bar">
+              <div class="score-fill weighted-fill"></div>
+            </div>
+          </div>
+          <div class="score-card" title="Best chunk similarity score (lower = more relevant)">
+            <div class="score-label">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+              Best Chunk
+            </div>
+            <div class="score-value best-score-val"></div>
+            <div class="score-bar">
+              <div class="score-fill best-fill"></div>
+            </div>
+          </div>
+          <div class="score-card" title="Average chunk similarity score">
+            <div class="score-label">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+              </svg>
+              Avg Score
+            </div>
+            <div class="score-value avg-score-val"></div>
+            <div class="score-bar">
+              <div class="score-fill avg-fill"></div>
+            </div>
+          </div>
+          <div class="score-card chunks-card" title="Number of matched text chunks">
+            <div class="score-label">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+              </svg>
+              Chunks
+            </div>
+            <div class="score-value chunks-val"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Expanded Full Content -->
+      <div class="card-expanded" hidden>
+        <!-- Tab bar: Rendered | Raw -->
+        <div class="expand-tabs">
+          <button class="expand-tab active" data-tab="rendered">📄 Rendered</button>
+          <button class="expand-tab" data-tab="raw">⌨️ Raw</button>
+        </div>
+        <div class="expanded-content markdown-body" data-view="rendered"></div>
+        <div class="expanded-content raw-content" data-view="raw" hidden></div>
+        <div class="expand-footer">
+          <span class="text-source-badge"></span>
+          <a class="open-wiki-btn" href="#" target="_blank" rel="noopener noreferrer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+            Open on Wikipedia
+          </a>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <!-- marked.js for markdown rendering -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
