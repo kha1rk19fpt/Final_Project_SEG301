@@ -1,6 +1,8 @@
 env/
 data/
 __pycache__/
+problems.txt
+test_backend/
 
 *.py[cod]
 *$py.class
