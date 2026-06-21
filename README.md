@@ -9,6 +9,7 @@
 - *Dành cho ai muốn tự crawl data:
 1. Truy cập vào folder wiki_bot: `cd wiki_bot`
 2. Thực hiện lệnh sau để bắt đầu crawl: `scrapy crawl wiki_spider`
+- *Tự động hóa crawl data và vector embedding `./run_pipeline.bat`
 
 ## Chạy backend API
 - khởi động backend(30-60s): `uvicorn src.backend.main:app --reload`
