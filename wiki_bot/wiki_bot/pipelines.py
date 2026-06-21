@@ -11,3 +11,15 @@ from itemadapter import ItemAdapter
 class WikiBotPipeline:
     def process_item(self, item, spider):
         return item
+
+class DuplicatesPipeline:
+    def __init__(self):
+        self.seen_urls = set()
+
+    def process_item(self, item, spider):
+        url = item.get('url', '')
+        if url in self.seen_urls:
+            from scrapy.exceptions import DropItem
+            raise DropItem(f"Duplicate URL: {url}")
+        self.seen_urls.add(url)
+        return item

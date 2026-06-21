@@ -8,7 +8,6 @@
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
 BOT_NAME = "wiki_bot"
-
 SPIDER_MODULES = ["wiki_bot.spiders"]
 NEWSPIDER_MODULE = "wiki_bot.spiders"
 
@@ -22,9 +21,13 @@ USER_AGENT = "wiki_bot_AI_project_student (+http://google.com)"
 ROBOTSTXT_OBEY = True
 
 # Concurrency and throttling settings
-CONCURRENT_REQUESTS = 32
-#CONCURRENT_REQUESTS_PER_DOMAIN = 1
+CONCURRENT_REQUESTS = 8
+CONCURRENT_REQUESTS_PER_DOMAIN = 4
 DOWNLOAD_DELAY = 0.5
+
+# Bật duplicate filter rõ ràng
+DUPEFILTER_CLASS = 'scrapy.dupefilters.RFPDupeFilter'
+DUPEFILTER_DEBUG = False
 
 # Disable cookies (enabled by default)
 #COOKIES_ENABLED = False
@@ -58,9 +61,9 @@ DOWNLOAD_DELAY = 0.5
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    "wiki_bot.pipelines.WikiBotPipeline": 300,
-#}
+ITEM_PIPELINES = {
+    'wiki_bot.pipelines.DuplicatesPipeline': 100,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html
