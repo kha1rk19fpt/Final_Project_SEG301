@@ -203,9 +203,12 @@ function buildCard(article, idx, minScore, maxScore) {
     : 'No content available.';
 
   // Scores
-  card.querySelector('.weighted-score-val').textContent = weighted_score.toFixed(4);
-  card.querySelector('.best-score-val').textContent = best_chunk_score.toFixed(4);
-  card.querySelector('.avg-score-val').textContent = avg_chunk_score.toFixed(4);
+  card.querySelector('.weighted-score-val').textContent = 
+      weighted_score   != null ? weighted_score.toFixed(4)   : 'N/A';
+  card.querySelector('.best-score-val').textContent     = 
+      best_chunk_score != null ? best_chunk_score.toFixed(4) : 'N/A';
+  card.querySelector('.avg-score-val').textContent      = 
+      avg_chunk_score  != null ? avg_chunk_score.toFixed(4)  : 'N/A';
   card.querySelector('.chunks-val').textContent = matched_chunks;
 
   // Score color coding on score-value elements
@@ -219,9 +222,9 @@ function buildCard(article, idx, minScore, maxScore) {
     const pct = 100 - ((score - minScore) / range) * 80;
     return Math.max(10, Math.min(100, pct));
   };
-  animateFill(card.querySelector('.weighted-fill'), relFill(weighted_score));
-  animateFill(card.querySelector('.best-fill'), relFill(best_chunk_score));
-  animateFill(card.querySelector('.avg-fill'), relFill(avg_chunk_score));
+  if (weighted_score   != null) animateFill(card.querySelector('.weighted-fill'), relFill(weighted_score));
+  if (best_chunk_score != null) animateFill(card.querySelector('.best-fill'),     relFill(best_chunk_score));
+  if (avg_chunk_score  != null) animateFill(card.querySelector('.avg-fill'),      relFill(avg_chunk_score));
 
   // ── Expand / Collapse ──
   const expandBtn = card.querySelector('.expand-btn');
