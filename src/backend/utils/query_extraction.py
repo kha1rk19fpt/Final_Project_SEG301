@@ -32,15 +32,30 @@ class QueryExtraction:
     def extract(self, raw_query: str) -> dict:
         self.rake.extract_keywords_from_text(raw_query)
         rake_keywords = self.rake.get_ranked_phrases()[:3]
+
         tokens = self.tokenization(raw_query)
-        clean_tokens = [token for token in tokens if token not in self.stop_words and token not in string.punctuation]
+        clean_tokens = [
+            token for token in tokens
+            if token not in self.stop_words and token not in string.punctuation
+        ]
         pos_tags = pos_tag(clean_tokens)
-        prim_keywords = [token for token, tag in pos_tags if tag.startswith('NN') or tag.startswith('JJ')]
+        prim_keywords = [
+            token for token, tag in pos_tags
+            if tag.startswith('NN') or tag.startswith('JJ') or tag.startswith('VB')
+        ]
         if not prim_keywords:
             prim_keywords = clean_tokens
-        combine_search_query = " ".join(set(rake_keywords + prim_keywords))
-        if not combine_search_query:
+
+        seen = {}
+        for kw in rake_keywords + prim_keywords:
+            kw_lower = kw.lower()
+            if kw_lower not in seen:
+                seen[kw_lower] = kw
+
+        combine_search_query = " ".join(seen.keys())
+        if not combine_search_query.strip():
             combine_search_query = raw_query
+
         return {
             'context': raw_query,
             'search_keywords': combine_search_query
