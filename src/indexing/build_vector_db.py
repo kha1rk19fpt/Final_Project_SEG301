@@ -23,7 +23,7 @@ def main():
     docs = []
     metadatas = []
     ids = []
-
+    
     #Semantic chunking
     chunk_id = 0
     for article in tqdm(data, desc="The progress of semantic chunking"):
@@ -39,7 +39,8 @@ def main():
         for sc in semantic_chunking:
             chunk_text = sc.page_content.strip()
             if len(chunk_text) > 50:
-                docs.append(chunk_text)
+                title_chunk_text = f"{title}\n\n{chunk_text}"
+                docs.append(title_chunk_text)
                 table_str = json.dumps(tables, ensure_ascii=False) if tables else ""
                 metadatas.append({
                     'title': str(title),
@@ -48,7 +49,17 @@ def main():
                 })
                 ids.append(f"chunk_{chunk_id}")
                 chunk_id += 1
-
+        intro_text = text[:800].strip()
+        if intro_text:
+            title_chunk = f"{title}\n{title}\n\n{intro_text}"
+            docs.append(title_chunk)
+            metadatas.append({
+                "title": str(title),
+                "url": str(url),
+                "tables":''
+            })
+            ids.append(f"title_{chunk_id}")
+            chunk_id += 1
     #Vector embedding
     batch_size = 500
     for i in tqdm(range(0, len(docs), batch_size), desc="The progress of Vector Embedding"):
