@@ -5,7 +5,7 @@
 
 ## Lấy dữ liệu:
 - data/raw/ : `https://drive.google.com/drive/folders/1XXxsdiq8Z5xtVhfn3lMfn0Ymg8o4FHq4?usp=sharing`
-- data/vector: Chạy lệnh sau để bắt đầu indexing(Semantic chunking + Vector embbeding)(mất khoảng 2-4h): `python -m src.indexing.build_vector_db`
+- data/vector: Chạy lệnh sau để bắt đầu indexing(Semantic chunking + Vector embbeding)(mất khoảng 3-4h): ``python -m src.indexing.build_vector_db``
 - *Dành cho ai muốn tự crawl data:
 1. Truy cập vào folder wiki_bot: `cd wiki_bot`
 2. Thực hiện lệnh sau để bắt đầu crawl: `scrapy crawl wiki_spider`
