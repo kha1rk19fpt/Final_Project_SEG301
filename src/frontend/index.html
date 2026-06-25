@@ -169,44 +169,43 @@
 
         <!-- Score Dashboard -->
         <div class="score-dashboard">
-          <div class="score-card" title="Weighted relevance score (lower = more relevant)">
+          <div class="score-card" title="Final Score sau khi áp dụng Asymmetric Weighted RRF (Cao hơn là tốt hơn)">
             <div class="score-label">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon
-                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
-              Weighted Score
+              Final Score
             </div>
-            <div class="score-value weighted-score-val"></div>
+            <div class="score-value final-score-val"></div>
             <div class="score-bar">
-              <div class="score-fill weighted-fill"></div>
+              <div class="score-fill final-fill"></div>
             </div>
           </div>
-          <div class="score-card" title="Best chunk similarity score (lower = more relevant)">
+          <div class="score-card" title="Best L2 Chunk Distance (Thấp hơn là tốt hơn)">
             <div class="score-label">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                 <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
-              Best Chunk
+              L2 Score
             </div>
-            <div class="score-value best-score-val"></div>
+            <div class="score-value l2-score-val"></div>
             <div class="score-bar">
-              <div class="score-fill best-fill"></div>
+              <div class="score-fill l2-fill"></div>
             </div>
           </div>
-          <div class="score-card" title="Average chunk similarity score">
+          <div class="score-card" title="BM25 Ranking Score (Cao hơn là tốt hơn)">
             <div class="score-label">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="18" y1="20" x2="18" y2="10" />
                 <line x1="12" y1="20" x2="12" y2="4" />
                 <line x1="6" y1="20" x2="6" y2="14" />
               </svg>
-              Avg Score
+              BM25 Score
             </div>
-            <div class="score-value avg-score-val"></div>
+            <div class="score-value bm25-score-val"></div>
             <div class="score-bar">
-              <div class="score-fill avg-fill"></div>
+              <div class="score-fill bm25-fill"></div>
             </div>
           </div>
           <div class="score-card chunks-card" title="Number of matched text chunks">

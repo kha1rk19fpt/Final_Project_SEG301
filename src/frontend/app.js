@@ -156,30 +156,24 @@ function renderResults(data) {
 // ── Build a Single Result Card ────────────────────────────────────────────────
 function buildCard(article, idx, minScore, maxScore) {
   const {
-    rank, title, url, content,
-    weighted_score, best_chunk_score, avg_chunk_score,
-    matched_chunks, text_source,
+    rank, title, url, content, text_source,
+    final_rrf_score, l2_score, bm25_score, matched_chunks
   } = article;
 
   const frag = cardTemplate.content.cloneNode(true);
   const card = frag.querySelector('.result-card');
 
-  // Stagger animation delay
   card.style.animationDelay = `${idx * 0.07}s`;
-
-  // Rank badge
   card.querySelector('.rank-badge').textContent = `#${rank}`;
-
-  // Title & URL
   card.querySelector('.card-title').textContent = title || 'Untitled';
+  
   const urlEl = card.querySelector('.card-url');
   urlEl.href = url;
   urlEl.textContent = truncateUrl(url, 55);
   urlEl.title = url;
 
-  // Source badge (full_article vs merged_chunks)
   const sourceBadge = card.querySelector('.source-badge');
-  if (text_source === 'full_article') {
+  if (text_source === 'full_article' || text_source === 'bm25_only') {
     sourceBadge.textContent = '✓ Full article';
     sourceBadge.classList.add('source-full');
   } else {
@@ -187,46 +181,32 @@ function buildCard(article, idx, minScore, maxScore) {
     sourceBadge.classList.add('source-merged');
   }
 
-  // Content preview — plain text, 3 lines
   const preview = card.querySelector('.content-preview');
-  // Strip markdown symbols for cleaner preview
   const plainPreview = (content || '')
-    .replace(/#{1,6}\s/g, '')
-    .replace(/\*\*(.*?)\*\*/g, '$1')
-    .replace(/\*(.*?)\*/g, '$1')
-    .replace(/`(.*?)`/g, '$1')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/\n{2,}/g, ' ')
-    .trim();
+    .replace(/#{1,6}\s/g, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1')
+    .replace(/`(.*?)`/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\n{2,}/g, ' ').trim();
   preview.textContent = plainPreview
     ? plainPreview.slice(0, 320) + (plainPreview.length > 320 ? '…' : '')
     : 'No content available.';
 
-  // Scores
-  card.querySelector('.weighted-score-val').textContent = 
-      weighted_score   != null ? weighted_score.toFixed(4)   : 'N/A';
-  card.querySelector('.best-score-val').textContent     = 
-      best_chunk_score != null ? best_chunk_score.toFixed(4) : 'N/A';
-  card.querySelector('.avg-score-val').textContent      = 
-      avg_chunk_score  != null ? avg_chunk_score.toFixed(4)  : 'N/A';
-  card.querySelector('.chunks-val').textContent = matched_chunks;
+  // Render Data
+  card.querySelector('.final-score-val').textContent = final_rrf_score != null ? final_rrf_score.toFixed(4) : 'N/A';
+  card.querySelector('.l2-score-val').textContent    = l2_score != null ? l2_score.toFixed(4) : 'N/A';
+  card.querySelector('.bm25-score-val').textContent  = bm25_score != null ? bm25_score.toFixed(4) : 'N/A';
+  card.querySelector('.chunks-val').textContent      = matched_chunks || 0;
 
-  // Score color coding on score-value elements
-  colorScore(card.querySelector('.weighted-score-val'), weighted_score);
-  colorScore(card.querySelector('.best-score-val'), best_chunk_score);
-  colorScore(card.querySelector('.avg-score-val'), avg_chunk_score);
+  // L2: Thấp là tốt (Xanh lá). RRF & BM25: Cao là tốt (Xanh lá)
+  colorScore(card.querySelector('.final-score-val'), final_rrf_score, 'high');
+  colorScore(card.querySelector('.l2-score-val'), l2_score, 'low');
+  colorScore(card.querySelector('.bm25-score-val'), bm25_score, 'high');
 
-  // Score bars (invert: lower = more fill)
-  const range = maxScore - minScore || 1;
-  const relFill = (score) => {
-    const pct = 100 - ((score - minScore) / range) * 80;
-    return Math.max(10, Math.min(100, pct));
-  };
-  if (weighted_score   != null) animateFill(card.querySelector('.weighted-fill'), relFill(weighted_score));
-  if (best_chunk_score != null) animateFill(card.querySelector('.best-fill'),     relFill(best_chunk_score));
-  if (avg_chunk_score  != null) animateFill(card.querySelector('.avg-fill'),      relFill(avg_chunk_score));
+  // Logic vẽ thanh tiến trình đơn giản
+  if (final_rrf_score != null) animateFill(card.querySelector('.final-fill'), Math.min(final_rrf_score * 1500, 100)); // Hệ số cho RRF
+  if (l2_score != null) animateFill(card.querySelector('.l2-fill'), Math.max(0, 100 - (l2_score * 100))); // Đảo chiều cho L2
+  if (bm25_score != null) animateFill(card.querySelector('.bm25-fill'), Math.min(bm25_score * 2.5, 100)); // Hệ số cho BM25
 
-  // ── Expand / Collapse ──
+  // Expand / Collapse / Tabs switcher
   const expandBtn = card.querySelector('.expand-btn');
   const cardExpanded = card.querySelector('.card-expanded');
   const renderedPane = card.querySelector('[data-view="rendered"]');
@@ -235,7 +215,6 @@ function buildCard(article, idx, minScore, maxScore) {
   const wikiBtn = card.querySelector('.open-wiki-btn');
   const tabs = card.querySelectorAll('.expand-tab');
 
-  // Tab switching
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       tabs.forEach(t => t.classList.remove('active'));
@@ -252,21 +231,16 @@ function buildCard(article, idx, minScore, maxScore) {
     expandBtn.classList.toggle('active', !isExpanded);
 
     if (!isExpanded) {
-      // Populate on first open
       if (!renderedPane.dataset.loaded) {
         renderedPane.innerHTML = renderMarkdown(content || 'No content available.');
         rawPane.textContent = content || 'No content available.';
         renderedPane.dataset.loaded = '1';
       }
       wikiBtn.href = url;
-
-      // Text source badge in footer
-      textSourceBadge.textContent = text_source === 'full_article'
-        ? '📄 Full article from JSON'
-        : '🔗 Merged from matched chunks';
+      textSourceBadge.textContent = (text_source === 'full_article' || text_source === 'bm25_only')
+        ? '📄 Full article matched' : '🔗 Merged from matched chunks';
       textSourceBadge.className = 'text-source-badge ' +
-        (text_source === 'full_article' ? 'source-full' : 'source-merged');
-
+        ((text_source === 'full_article' || text_source === 'bm25_only') ? 'source-full' : 'source-merged');
       setVisible(cardExpanded, true);
     } else {
       setVisible(cardExpanded, false);
@@ -278,13 +252,21 @@ function buildCard(article, idx, minScore, maxScore) {
 
 // ── Score color helper ────────────────────────────────────────────────────────
 // Lower score = more relevant = green, higher = red
-function colorScore(el, score) {
-  if (!el) return;
+function colorScore(el, score, bestIs = 'low') {
+  if (!el || score == null) return;
   el.classList.remove('score-good', 'score-mid', 'score-bad');
-  if (score < 0.35) el.classList.add('score-good');
-  else if (score < 0.60) el.classList.add('score-mid');
-  else el.classList.add('score-bad');
-}
+  
+  if (bestIs === 'low') {
+    if (score < 0.6) el.classList.add('score-good');
+    else if (score < 1.0) el.classList.add('score-mid');
+    else el.classList.add('score-bad');
+  } else {
+    // bestIs === 'high'
+    if (score > 10.0) el.classList.add('score-good'); // Cho BM25 tốt
+    else if (score > 0.02) el.classList.add('score-good'); // Cho RRF tốt
+    else el.classList.add('score-mid');
+  }
+} // <-- ĐÃ THÊM DẤU ĐÓNG NGOẶC BỊ THIẾU Ở ĐÂY
 
 // ── Error State ───────────────────────────────────────────────────────────────
 function showError(message) {
