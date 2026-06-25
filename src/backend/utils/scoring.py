@@ -5,9 +5,9 @@ from typing import List, Dict
 RRF_K = 60
 L2_THRESHOLD = 0.62
 W_SPARSE_HIGH = 1.0
-W_DENSE_HIGH  = 1.0
-W_SPARSE_LOW  = 0.1
-LAMBDA        = 3.8376
+W_DENSE_HIGH = 1.0
+W_SPARSE_LOW = 0.1
+LAMBDA = 3.8376
 
 def title_boost_score(query: str, title: str) -> float:
     stop = {'what', 'is', 'the', 'a', 'an', 'how', 'why', 'who', 'does', 'do', 'are', 'was', 'were', 'about', '?', 'long'}
@@ -16,19 +16,19 @@ def title_boost_score(query: str, title: str) -> float:
     if not query_words or not title_words:
         return 1.0
     intersection = query_words & title_words
-    union        = query_words | title_words
-    jaccard      = len(intersection) / len(union)
+    union = query_words | title_words
+    jaccard = len(intersection) / len(union)
     return round(1.0 - jaccard * 0.35, 4)
 
 def calc_weighted_score(distances: List[float]) -> dict:
-    avg  = sum(distances) / len(distances)
+    avg = sum(distances) / len(distances)
     best = min(distances)
     weighted = round(best * 0.6 + avg * 0.4, 6)
     return {
         "weighted_score": weighted,
-        "avg_score":      round(avg, 6),
-        "best_score":     round(best, 6),
-        "chunk_count":    len(distances),
+        "avg_score": round(avg, 6),
+        "best_score": round(best, 6),
+        "chunk_count": len(distances),
     }
 
 def _get_dense_weight(best_l2: float) -> float:
@@ -37,15 +37,16 @@ def _get_dense_weight(best_l2: float) -> float:
     return round(math.exp(-LAMBDA * best_l2), 6)
 def _get_sparse_weight(best_l2: float) -> float:
     return W_SPARSE_LOW if best_l2 <= L2_THRESHOLD else W_SPARSE_HIGH
+
 def asymmetric_weighted_rrf(vector_articles: List[dict], bm25_results: List[dict], top_k: int, full_text_index: dict) -> List[dict]:
     rrf_scores: Dict[str, float] = {}
     data: Dict[str, dict] = {}
     bm25_score_map = {r["url"]: r["bm25_score"] for r in bm25_results}
     # xu ly vector
     for rank, art in enumerate(vector_articles, start=1):
-        url      = art["url"]
-        best_l2  = art["score_info"]["best_score"]
-        w_dense  = _get_dense_weight(best_l2)
+        url = art["url"]
+        best_l2 = art["score_info"]["best_score"]
+        w_dense = _get_dense_weight(best_l2)
         w_sparse = _get_sparse_weight(best_l2)
         dense_contrib = w_dense * (1.0 / (RRF_K + rank))
         bm25_rank = next((i + 1 for i, r in enumerate(bm25_results) if r["url"] == url), None)
@@ -62,8 +63,8 @@ def asymmetric_weighted_rrf(vector_articles: List[dict], bm25_results: List[dict
         if url in data:
             continue
         fallback_l2  = 1.0 
-        w_dense      = _get_dense_weight(fallback_l2)
-        w_sparse     = _get_sparse_weight(fallback_l2)
+        w_dense = _get_dense_weight(fallback_l2)
+        w_sparse = _get_sparse_weight(fallback_l2)
         sparse_contrib  = w_sparse * (1.0 / (RRF_K + rank))
         rrf_scores[url] = sparse_contrib
         full = full_text_index.get(url, {})
