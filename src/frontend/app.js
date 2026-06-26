@@ -5,118 +5,78 @@
 
 const API_BASE = 'http://127.0.0.1:8000';
 
-// ── marked.js config ─────────────────────────────────────────────────────────
+// ── marked.js config ──────────────────────────────────────────────────────────
 if (typeof marked !== 'undefined') {
-  marked.setOptions({
-    breaks: true,
-    gfm: true,
-    headerIds: false,
-    mangle: false,
-  });
+  marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
 }
-
 function renderMarkdown(text) {
   if (typeof marked !== 'undefined') {
-    try { return marked.parse(text || ''); }
-    catch { return escapeHtml(text); }
+    try { return marked.parse(text || ''); } catch { return escapeHtml(text); }
   }
   return escapeHtml(text);
 }
-
 function escapeHtml(str) {
-  return (str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // ── DOM References ────────────────────────────────────────────────────────────
-const searchForm = document.getElementById('searchForm');
+const searchForm  = document.getElementById('searchForm');
 const searchInput = document.getElementById('searchInput');
-const topKSelect = document.getElementById('topKSelect');
-const searchBtn = document.getElementById('searchBtn');
+const topKSelect  = document.getElementById('topKSelect');
+const searchBtn   = document.getElementById('searchBtn');
 const suggestions = document.getElementById('suggestions');
-
-const statusBar = document.getElementById('statusBar');
-const statusText = document.getElementById('statusText');
-const metaQuery = document.getElementById('metaQuery');
-const metaTime = document.getElementById('metaTime');
-
+const statusBar   = document.getElementById('statusBar');
+const statusText  = document.getElementById('statusText');
+const metaQuery   = document.getElementById('metaQuery');
+const metaTime    = document.getElementById('metaTime');
 const loadingState = document.getElementById('loadingState');
-const errorState = document.getElementById('errorState');
-const errorDesc = document.getElementById('errorDesc');
-const retryBtn = document.getElementById('retryBtn');
-const emptyState = document.getElementById('emptyState');
-const resultsList = document.getElementById('resultsList');
+const errorState   = document.getElementById('errorState');
+const errorDesc    = document.getElementById('errorDesc');
+const retryBtn     = document.getElementById('retryBtn');
+const emptyState   = document.getElementById('emptyState');
+const resultsList  = document.getElementById('resultsList');
 const cardTemplate = document.getElementById('resultCardTemplate');
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let lastQuery = '';
-let lastK = 5;
+let lastK     = 5;
 
-// ── Event Listeners ───────────────────────────────────────────────────────────
+// ── Events ────────────────────────────────────────────────────────────────────
 searchForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const q = searchInput.value.trim();
   if (!q) { searchInput.focus(); return; }
   runSearch(q, parseInt(topKSelect.value, 10));
 });
-
-retryBtn.addEventListener('click', () => {
-  if (lastQuery) runSearch(lastQuery, lastK);
-});
-
-// Suggestion pills
+retryBtn.addEventListener('click', () => { if (lastQuery) runSearch(lastQuery, lastK); });
 suggestions.addEventListener('click', (e) => {
   const pill = e.target.closest('.pill');
   if (!pill) return;
-  const q = pill.dataset.query;
-  searchInput.value = q;
-  runSearch(q, parseInt(topKSelect.value, 10));
+  searchInput.value = pill.dataset.query;
+  runSearch(pill.dataset.query, parseInt(topKSelect.value, 10));
 });
-
-// Keyboard shortcut: Ctrl+K / Cmd+K to focus search
 document.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-    e.preventDefault();
-    searchInput.focus();
-    searchInput.select();
-  }
-  // Escape to clear input
-  if (e.key === 'Escape' && document.activeElement === searchInput) {
-    searchInput.value = '';
-  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); searchInput.focus(); searchInput.select(); }
+  if (e.key === 'Escape' && document.activeElement === searchInput) searchInput.value = '';
 });
 
-// ── Core Search Function ──────────────────────────────────────────────────────
+// ── Core Search ───────────────────────────────────────────────────────────────
 async function runSearch(query, k) {
-  lastQuery = query;
-  lastK = k;
-
+  lastQuery = query; lastK = k;
   setVisible(loadingState, true);
-  setVisible(statusBar, false);
-  setVisible(errorState, false);
-  setVisible(emptyState, false);
+  setVisible(statusBar, false); setVisible(errorState, false); setVisible(emptyState, false);
   resultsList.innerHTML = '';
   searchBtn.disabled = true;
-
-  document.getElementById('resultsSection')
-    .scrollIntoView({ behavior: 'smooth', block: 'start' });
-
+  document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
   try {
-    const url = `${API_BASE}/search?q=${encodeURIComponent(query)}&k=${k}`;
-    const res = await fetch(url);
-
+    const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}&k=${k}`);
     if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      throw new Error(errBody.detail || `Server error ${res.status}`);
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.detail || `Server error ${res.status}`);
     }
-
-    const data = await res.json();
-    renderResults(data);
-
+    renderResults(await res.json());
   } catch (err) {
-    showError(err.message || 'Cannot connect to backend. Make sure uvicorn is running on port 8000.');
+    showError(err.message || 'Cannot connect to backend.');
   } finally {
     setVisible(loadingState, false);
     searchBtn.disabled = false;
@@ -125,122 +85,134 @@ async function runSearch(query, k) {
 
 // ── Render Results ────────────────────────────────────────────────────────────
 function renderResults(data) {
-  const {
-    optimized_search_keyword,
-    processing_time_ms,
-    total_results,
-    data: articles,
-  } = data;
+  const { optimized_search_keyword, processing_time_ms, total_results,
+          vector_pool_size, bm25_pool_size, data: articles } = data;
 
   statusText.textContent = `${total_results} result${total_results !== 1 ? 's' : ''} found`;
-  metaQuery.textContent = `🔍 "${optimized_search_keyword}"`;
-  metaTime.textContent = `⚡ ${processing_time_ms} ms`;
+  metaQuery.textContent  = `🔍 "${optimized_search_keyword}"`;
+  metaTime.textContent   = `⚡ ${processing_time_ms} ms`;
   setVisible(statusBar, true);
 
-  if (!articles || articles.length === 0) {
-    setVisible(emptyState, true);
-    return;
-  }
-
-  // Score range → relative bar widths
-  const scores = articles.map(a => a.weighted_score);
-  const minScore = Math.min(...scores);
-  const maxScore = Math.max(...scores);
-
-  articles.forEach((article, idx) => {
-    const card = buildCard(article, idx, minScore, maxScore);
-    resultsList.appendChild(card);
-  });
+  if (!articles || articles.length === 0) { setVisible(emptyState, true); return; }
+  articles.forEach((article, idx) => resultsList.appendChild(buildCard(article, idx)));
 }
 
-// ── Build a Single Result Card ────────────────────────────────────────────────
-function buildCard(article, idx, minScore, maxScore) {
+// ── Build Card ────────────────────────────────────────────────────────────────
+function buildCard(article, idx) {
   const {
     rank, title, url, content, text_source,
-    final_rrf_score, l2_score, bm25_score, matched_chunks
+    final_rrf_score, l2_score, bm25_score,
+    l2_rank, bm25_rank, matched_chunks,
   } = article;
 
   const frag = cardTemplate.content.cloneNode(true);
   const card = frag.querySelector('.result-card');
-
   card.style.animationDelay = `${idx * 0.07}s`;
+
+  // Header
   card.querySelector('.rank-badge').textContent = `#${rank}`;
   card.querySelector('.card-title').textContent = title || 'Untitled';
-  
   const urlEl = card.querySelector('.card-url');
-  urlEl.href = url;
-  urlEl.textContent = truncateUrl(url, 55);
-  urlEl.title = url;
+  urlEl.href = url; urlEl.textContent = truncateUrl(url, 55); urlEl.title = url;
 
-  const sourceBadge = card.querySelector('.source-badge');
-  if (text_source === 'full_article' || text_source === 'bm25_only') {
-    sourceBadge.textContent = '✓ Full article';
-    sourceBadge.classList.add('source-full');
+  // Source badge
+  const sb = card.querySelector('.source-badge');
+  if (text_source === 'full_article') { sb.textContent = '✓ Full article'; sb.classList.add('source-full'); }
+  else { sb.textContent = '⚡ Merged chunks'; sb.classList.add('source-merged'); }
+
+  // Content preview
+  const preview = card.querySelector('.content-preview');
+  const plain = (content || '')
+    .replace(/#{1,6}\s/g,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1')
+    .replace(/`(.*?)`/g,'$1').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/\n{2,}/g,' ').trim();
+  preview.textContent = plain ? plain.slice(0, 320) + (plain.length > 320 ? '…' : '') : 'No content available.';
+
+  // ── Score Dashboard ──
+
+  // 1. Final Score (higher = better)
+  const finalEl = card.querySelector('.final-score-val');
+  finalEl.textContent = final_rrf_score != null ? final_rrf_score.toFixed(6) : 'N/A';
+  colorHigherBetter(finalEl, final_rrf_score, 0.010, 0.005);
+  animateFill(card.querySelector('.final-fill'), Math.min(100, (final_rrf_score || 0) * 8000));
+
+  // 2. L2 Score (lower = better) + rank badge
+  const l2El   = card.querySelector('.l2-score-val');
+  const l2RankEl = card.querySelector('.l2-rank-badge');
+  if (l2_score != null) {
+    l2El.textContent = l2_score.toFixed(4);
+    colorLowerBetter(l2El, l2_score, 0.35, 0.62);
+    animateFill(card.querySelector('.l2-fill'), Math.max(5, 100 - l2_score * 100));
+    if (l2_rank != null) {
+      l2RankEl.textContent = `#${l2_rank} in vector`;
+      l2RankEl.classList.remove('rank-na');
+    } else {
+      l2RankEl.textContent = '';
+    }
   } else {
-    sourceBadge.textContent = '⚡ Merged chunks';
-    sourceBadge.classList.add('source-merged');
+    // N/A — BM25-only article không có trong vector pool
+    l2El.textContent      = 'N/A';
+    l2El.classList.add('score-na');
+    l2RankEl.textContent  = 'not in vector pool';
+    l2RankEl.classList.add('rank-na');
+    animateFill(card.querySelector('.l2-fill'), 0);
   }
 
-  const preview = card.querySelector('.content-preview');
-  const plainPreview = (content || '')
-    .replace(/#{1,6}\s/g, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1')
-    .replace(/`(.*?)`/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/\n{2,}/g, ' ').trim();
-  preview.textContent = plainPreview
-    ? plainPreview.slice(0, 320) + (plainPreview.length > 320 ? '…' : '')
-    : 'No content available.';
+  // 3. BM25 Score (higher = better) + rank badge
+  const bm25El     = card.querySelector('.bm25-score-val');
+  const bm25RankEl = card.querySelector('.bm25-rank-badge');
+  if (bm25_score != null && bm25_score > 0) {
+    bm25El.textContent = bm25_score.toFixed(2);
+    colorHigherBetter(bm25El, bm25_score, 10, 3);
+    animateFill(card.querySelector('.bm25-fill'), Math.min(100, bm25_score * 3));
+    if (bm25_rank != null) {
+      bm25RankEl.textContent = `#${bm25_rank} in BM25`;
+      bm25RankEl.classList.remove('rank-na');
+    } else {
+      bm25RankEl.textContent = '';
+    }
+  } else {
+    // Không có trong BM25 pool
+    bm25El.textContent      = 'N/A';
+    bm25El.classList.add('score-na');
+    bm25RankEl.textContent  = 'not in BM25 pool';
+    bm25RankEl.classList.add('rank-na');
+    animateFill(card.querySelector('.bm25-fill'), 0);
+  }
 
-  // Render Data
-  card.querySelector('.final-score-val').textContent = final_rrf_score != null ? final_rrf_score.toFixed(4) : 'N/A';
-  card.querySelector('.l2-score-val').textContent    = l2_score != null ? l2_score.toFixed(4) : 'N/A';
-  card.querySelector('.bm25-score-val').textContent  = bm25_score != null ? bm25_score.toFixed(4) : 'N/A';
-  card.querySelector('.chunks-val').textContent      = matched_chunks || 0;
+  // 4. Chunks
+  card.querySelector('.chunks-val').textContent = matched_chunks;
 
-  // L2: Thấp là tốt (Xanh lá). RRF & BM25: Cao là tốt (Xanh lá)
-  colorScore(card.querySelector('.final-score-val'), final_rrf_score, 'high');
-  colorScore(card.querySelector('.l2-score-val'), l2_score, 'low');
-  colorScore(card.querySelector('.bm25-score-val'), bm25_score, 'high');
-
-  // Logic vẽ thanh tiến trình đơn giản
-  if (final_rrf_score != null) animateFill(card.querySelector('.final-fill'), Math.min(final_rrf_score * 1500, 100)); // Hệ số cho RRF
-  if (l2_score != null) animateFill(card.querySelector('.l2-fill'), Math.max(0, 100 - (l2_score * 100))); // Đảo chiều cho L2
-  if (bm25_score != null) animateFill(card.querySelector('.bm25-fill'), Math.min(bm25_score * 2.5, 100)); // Hệ số cho BM25
-
-  // Expand / Collapse / Tabs switcher
-  const expandBtn = card.querySelector('.expand-btn');
+  // ── Expand ──
+  const expandBtn    = card.querySelector('.expand-btn');
   const cardExpanded = card.querySelector('.card-expanded');
   const renderedPane = card.querySelector('[data-view="rendered"]');
-  const rawPane = card.querySelector('[data-view="raw"]');
-  const textSourceBadge = card.querySelector('.text-source-badge');
-  const wikiBtn = card.querySelector('.open-wiki-btn');
-  const tabs = card.querySelectorAll('.expand-tab');
+  const rawPane      = card.querySelector('[data-view="raw"]');
+  const tsBadge      = card.querySelector('.text-source-badge');
+  const wikiBtn      = card.querySelector('.open-wiki-btn');
+  const tabs         = card.querySelectorAll('.expand-tab');
 
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       tabs.forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
-      const view = tab.dataset.tab;
-      setVisible(renderedPane, view === 'rendered');
-      setVisible(rawPane, view === 'raw');
+      setVisible(renderedPane, tab.dataset.tab === 'rendered');
+      setVisible(rawPane,      tab.dataset.tab === 'raw');
     });
   });
 
   expandBtn.addEventListener('click', () => {
-    const isExpanded = expandBtn.getAttribute('aria-expanded') === 'true';
-    expandBtn.setAttribute('aria-expanded', String(!isExpanded));
-    expandBtn.classList.toggle('active', !isExpanded);
-
-    if (!isExpanded) {
+    const expanded = expandBtn.getAttribute('aria-expanded') === 'true';
+    expandBtn.setAttribute('aria-expanded', String(!expanded));
+    expandBtn.classList.toggle('active', !expanded);
+    if (!expanded) {
       if (!renderedPane.dataset.loaded) {
         renderedPane.innerHTML = renderMarkdown(content || 'No content available.');
-        rawPane.textContent = content || 'No content available.';
+        rawPane.textContent    = content || 'No content available.';
         renderedPane.dataset.loaded = '1';
       }
       wikiBtn.href = url;
-      textSourceBadge.textContent = (text_source === 'full_article' || text_source === 'bm25_only')
-        ? '📄 Full article matched' : '🔗 Merged from matched chunks';
-      textSourceBadge.className = 'text-source-badge ' +
-        ((text_source === 'full_article' || text_source === 'bm25_only') ? 'source-full' : 'source-merged');
+      tsBadge.textContent = text_source === 'full_article' ? '📄 Full article from JSON' : '🔗 Merged from matched chunks';
+      tsBadge.className   = 'text-source-badge ' + (text_source === 'full_article' ? 'source-full' : 'source-merged');
       setVisible(cardExpanded, true);
     } else {
       setVisible(cardExpanded, false);
@@ -250,49 +222,26 @@ function buildCard(article, idx, minScore, maxScore) {
   return frag;
 }
 
-// ── Score color helper ────────────────────────────────────────────────────────
-// Lower score = more relevant = green, higher = red
-function colorScore(el, score, bestIs = 'low') {
-  if (!el || score == null) return;
-  el.classList.remove('score-good', 'score-mid', 'score-bad');
-  
-  if (bestIs === 'low') {
-    if (score < 0.6) el.classList.add('score-good');
-    else if (score < 1.0) el.classList.add('score-mid');
-    else el.classList.add('score-bad');
-  } else {
-    // bestIs === 'high'
-    if (score > 10.0) el.classList.add('score-good'); // Cho BM25 tốt
-    else if (score > 0.02) el.classList.add('score-good'); // Cho RRF tốt
-    else el.classList.add('score-mid');
-  }
-} // <-- ĐÃ THÊM DẤU ĐÓNG NGOẶC BỊ THIẾU Ở ĐÂY
-
-// ── Error State ───────────────────────────────────────────────────────────────
-function showError(message) {
-  errorDesc.textContent = message;
-  setVisible(errorState, true);
-  setVisible(loadingState, false);
+// ── Color helpers ─────────────────────────────────────────────────────────────
+function colorHigherBetter(el, v, good, mid) {
+  if (!el || v == null) return;
+  el.classList.remove('score-good','score-mid','score-bad');
+  el.classList.add(v >= good ? 'score-good' : v >= mid ? 'score-mid' : 'score-bad');
+}
+function colorLowerBetter(el, v, good, mid) {
+  if (!el || v == null) return;
+  el.classList.remove('score-good','score-mid','score-bad');
+  el.classList.add(v < good ? 'score-good' : v < mid ? 'score-mid' : 'score-bad');
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function setVisible(el, visible) {
-  el.hidden = !visible;
+function showError(msg) { errorDesc.textContent = msg; setVisible(errorState, true); setVisible(loadingState, false); }
+function setVisible(el, v) { el.hidden = !v; }
+function truncateUrl(url, max) {
+  try { const u = new URL(url); const s = u.hostname + u.pathname; return s.length > max ? s.slice(0,max)+'…' : s; }
+  catch { return url.length > max ? url.slice(0,max)+'…' : url; }
 }
-
-function truncateUrl(url, maxLen) {
-  try {
-    const u = new URL(url);
-    const short = u.hostname + u.pathname;
-    return short.length > maxLen ? short.slice(0, maxLen) + '…' : short;
-  } catch {
-    return url.length > maxLen ? url.slice(0, maxLen) + '…' : url;
-  }
-}
-
 function animateFill(el, pct) {
+  if (!el) return;
   el.style.width = '0%';
-  requestAnimationFrame(() => {
-    setTimeout(() => { el.style.width = pct + '%'; }, 80);
-  });
+  requestAnimationFrame(() => setTimeout(() => { el.style.width = Math.max(0,Math.min(100,pct))+'%'; }, 80));
 }

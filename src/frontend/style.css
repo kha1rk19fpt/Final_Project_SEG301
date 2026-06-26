@@ -1209,3 +1209,51 @@ body {
     transition-duration: .01ms !important;
   }
 }
+/* ── Score value + rank badge cùng hàng ── */
+.score-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+ 
+/* Khi dùng score-value-row, bỏ margin-bottom riêng của score-value */
+.score-value-row .score-value {
+  margin-bottom: 0;
+}
+ 
+/* ── Pool rank badge (e.g. "#3 in vector") ── */
+.pool-rank-badge {
+  font-family: var(--font-mono);
+  font-size: .65rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 100px;
+  background: rgba(139, 92, 246, .12);
+  border: 1px solid rgba(139, 92, 246, .25);
+  color: var(--c-violet-light);
+  white-space: nowrap;
+  letter-spacing: .02em;
+  /* ẩn khi rỗng */
+  display: none;
+}
+.pool-rank-badge:not(:empty) {
+  display: inline-block;
+}
+ 
+/* Khi N/A: màu xám nhạt, italic */
+.pool-rank-badge.rank-na {
+  background: rgba(100, 116, 139, .08);
+  border-color: rgba(100, 116, 139, .2);
+  color: #64748b;
+  font-style: italic;
+  font-weight: 400;
+}
+ 
+/* ── N/A score value ── */
+.score-value.score-na {
+  color: #475569;
+  font-size: .85rem;
+  font-style: italic;
+}

@@ -10,6 +10,11 @@ from src.backend.utils.md_formatter import MarkdownFormatter
 from src.backend.utils.bm25_kw_search import BM25Search
 from src.backend.utils.scoring import calc_weighted_score, title_boost_score, asymmetric_weighted_rrf
  
+
+# initialize Hyperparameter
+VECTOR_FETCH_N = 300
+BM25_FETCH_N = 100
+
 class SearchService:
     def __init__(self):
         self.client = chromadb.PersistentClient(path=VDB_PATH)
@@ -40,9 +45,12 @@ class SearchService:
 
     def search(self, query: str, top_k: int = 5) -> dict:
         start_time = time.time()
+
         extracted = self.extraction.extract(query)
         search_kw = extracted.get("search_keywords", query)
-        fetch_n = max(top_k * 6, 30)
+
+        collection_size = self.collection.count()
+        fetch_n = min(VECTOR_FETCH_N, collection_size)
         res = self.collection.query(query_texts=[search_kw],n_results=fetch_n)
  
         grouped: dict[str, dict] = defaultdict(lambda: {"distances": [], "chunk_texts": [], "title": "", "url": ""})
@@ -55,34 +63,36 @@ class SearchService:
                 title = meta.get("title", "Unknown")
                 if not url:
                     continue
-                grouped[url]["url"]   = url
-                grouped[url]["title"] = title
+                grouped[url]["url"] = url
+                grouped[url]["title"] =title
                 grouped[url]["distances"].append(dist)
                 grouped[url]["chunk_texts"].append(doc_text)
                 
         scored_articles = []
         for url, group in grouped.items():
             score_info = calc_weighted_score(group["distances"])
+            boost = title_boost_score(query, group["title"])
+            score_info["weighted_score"] = round(score_info["weighted_score"] * boost, 4)
+            score_info["title_boost"] = boost
             scored_articles.append({
                 "url": url,
-                "title": group["title"],
+                "title":group["title"],
                 "score_info": score_info,
-                "chunk_texts":  group["chunk_texts"],
-            })
-            
-        for article in scored_articles:
-            boost = title_boost_score(query, article["title"])
-            article["score_info"]["weighted_score"] = round(article["score_info"]["weighted_score"] * boost, 4)
-            article["score_info"]["title_boost"] = boost
- 
+                "chunk_texts": group["chunk_texts"],
+            })  
         scored_articles.sort(key=lambda x: x["score_info"]["weighted_score"])
-        bm25_results = self.bm25.search(query, top_k=top_k * 3)
-        top_articles = asymmetric_weighted_rrf(scored_articles, bm25_results, top_k, self._full_text_index)
-        formatted_res = []
 
+        for l2_rank, art in enumerate(scored_articles, start=1):
+            art["l2_rank"] = l2_rank
+        bm25_results = self.bm25.search(query, top_k=BM25_FETCH_N)
+        for bm25_rank, item in enumerate(bm25_results, start=1):
+            item["bm25_rank"] = bm25_rank
+        top_articles = asymmetric_weighted_rrf(scored_articles, bm25_results, top_k, self._full_text_index)
+        bm25_rank_map = {r["url"]:r["bm25_rank"] for r in bm25_results}
+
+        formatted_res = []
         for rank, article in enumerate(top_articles, start=1):
             url = article["url"]
-            title = article["title"]
             si = article["score_info"]
             full_data = self._full_text_index.get(url)
             
@@ -92,11 +102,23 @@ class SearchService:
                 text_source = "full_article"
             elif article.get("full_text"):
                 full_text = article["full_text"]
+                title = article["title"]
                 text_source = "bm25_only"
             else:
                 full_text ="\n\n---\n\n".join(article["chunk_texts"])
+                title=article["title"]
                 text_source ="merged_chunks"
+
             md_path = self.md_formatter.save_to_markdown(title=title, url=url, content=full_text, chunk_idx=rank)
+            
+            l2_score = article.get("l2_best_score")
+            if l2_score == 999:
+                l2_score = None
+            bm25_score = article.get("bm25_score", 0.0)
+            final_rrf = article.get("final_rrf_score", 0.0)
+            l2_rank=article.get("l2_rank")
+            bm25_rank = bm25_rank_map.get(url)
+            
             formatted_res.append({
                 "rank": rank,
                 "title": title,
@@ -104,19 +126,23 @@ class SearchService:
                 "content": full_text,
                 "markdown_file": md_path,
                 "text_source": text_source,
-                "final_rrf_score": article.get("final_rrf_score"),
-                "l2_score": article.get("l2_best_score"),
-                "bm25_score": article.get("bm25_score"),
+                "final_rrf_score": final_rrf,
+                "l2_score": round(l2_score, 4) if l2_score is not None else None,
+                "l2_rank":   l2_rank,
+                "bm25_score": round(bm25_score, 4) if bm25_score is not None else None,
+                "bm25_rank": bm25_rank,
                 "matched_chunks": si["chunk_count"],
             })
         end_time = time.time()
         processing_time_ms = round((end_time - start_time) * 1000, 2)
 
         return {
-            "query":                    query,
-            "extracted_context":        extracted.get("context", ""),
+            "query": query,
+            "extracted_context": extracted.get("context", ""),
             "optimized_search_keyword": search_kw,
-            "processing_time_ms":       processing_time_ms,
-            "total_results":            len(formatted_res),
-            "data":                     formatted_res,
+            "processing_time_ms": processing_time_ms,
+            "total_results": len(formatted_res),
+            "vector_pool_size": len(scored_articles),
+            "bm25_pool_size": len(bm25_results),
+            "data": formatted_res,
         }
