@@ -111,7 +111,7 @@ class SearchService:
 
             md_path = self.md_formatter.save_to_markdown(title=title, url=url, content=full_text, chunk_idx=rank)
             
-            cosine_score = article.get("cosine_best_score")
+            cosine_score = si.get("best_score")
             if cosine_score == 999:
                 cosine_score = None
             bm25_score = article.get("bm25_score", 0.0)
