@@ -101,8 +101,8 @@ function renderResults(data) {
 function buildCard(article, idx) {
   const {
     rank, title, url, content, text_source,
-    final_rrf_score, l2_score, bm25_score,
-    l2_rank, bm25_rank, matched_chunks,
+    final_rrf_score, cosine_score, bm25_score,
+    cosine_rank, bm25_rank, matched_chunks,
   } = article;
 
   const frag = cardTemplate.content.cloneNode(true);
@@ -135,26 +135,26 @@ function buildCard(article, idx) {
   colorHigherBetter(finalEl, final_rrf_score, 0.010, 0.005);
   animateFill(card.querySelector('.final-fill'), Math.min(100, (final_rrf_score || 0) * 8000));
 
-  // 2. L2 Score (lower = better) + rank badge
-  const l2El   = card.querySelector('.l2-score-val');
-  const l2RankEl = card.querySelector('.l2-rank-badge');
-  if (l2_score != null) {
-    l2El.textContent = l2_score.toFixed(4);
-    colorLowerBetter(l2El, l2_score, 0.35, 0.62);
-    animateFill(card.querySelector('.l2-fill'), Math.max(5, 100 - l2_score * 100));
-    if (l2_rank != null) {
-      l2RankEl.textContent = `#${l2_rank} in vector`;
-      l2RankEl.classList.remove('rank-na');
+  // 2. Cosine Score (lower = better) + rank badge
+  const cosineEl   = card.querySelector('.cosine-score-val');
+  const cosineRankEl = card.querySelector('.cosine-rank-badge');
+  if (cosine_score != null) {
+    cosineEl.textContent = cosine_score.toFixed(4);
+    colorLowerBetter(cosineEl, cosine_score, 0.35, 0.62);
+    animateFill(card.querySelector('.cosine-fill'), Math.max(5, 100 - cosine_score * 100));
+    if (cosine_rank != null) {
+      cosineRankEl.textContent = `#${cosine_rank} in vector`;
+      cosineRankEl.classList.remove('rank-na');
     } else {
-      l2RankEl.textContent = '';
+      cosineRankEl.textContent = '';
     }
   } else {
     // N/A — BM25-only article không có trong vector pool
-    l2El.textContent      = 'N/A';
-    l2El.classList.add('score-na');
-    l2RankEl.textContent  = 'not in vector pool';
-    l2RankEl.classList.add('rank-na');
-    animateFill(card.querySelector('.l2-fill'), 0);
+    cosineEl.textContent      = 'N/A';
+    cosineEl.classList.add('score-na');
+    cosineRankEl.textContent  = 'not in vector pool';
+    cosineRankEl.classList.add('rank-na');
+    animateFill(card.querySelector('.cosine-fill'), 0);
   }
 
   // 3. BM25 Score (higher = better) + rank badge

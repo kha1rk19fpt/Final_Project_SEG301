@@ -82,8 +82,8 @@ class SearchService:
             })  
         scored_articles.sort(key=lambda x: x["score_info"]["weighted_score"])
 
-        for l2_rank, art in enumerate(scored_articles, start=1):
-            art["l2_rank"] = l2_rank
+        for cosine_rank, art in enumerate(scored_articles, start=1):
+            art["cosine_rank"] = cosine_rank
         bm25_results = self.bm25.search(query, top_k=BM25_FETCH_N)
         for bm25_rank, item in enumerate(bm25_results, start=1):
             item["bm25_rank"] = bm25_rank
@@ -111,12 +111,12 @@ class SearchService:
 
             md_path = self.md_formatter.save_to_markdown(title=title, url=url, content=full_text, chunk_idx=rank)
             
-            l2_score = article.get("l2_best_score")
-            if l2_score == 999:
-                l2_score = None
+            cosine_score = article.get("cosine_best_score")
+            if cosine_score == 999:
+                cosine_score = None
             bm25_score = article.get("bm25_score", 0.0)
             final_rrf = article.get("final_rrf_score", 0.0)
-            l2_rank=article.get("l2_rank")
+            cosine_rank=article.get("cosine_rank")
             bm25_rank = bm25_rank_map.get(url)
             
             formatted_res.append({
@@ -127,8 +127,8 @@ class SearchService:
                 "markdown_file": md_path,
                 "text_source": text_source,
                 "final_rrf_score": final_rrf,
-                "l2_score": round(l2_score, 4) if l2_score is not None else None,
-                "l2_rank":   l2_rank,
+                "cosine_score": round(cosine_score, 4) if cosine_score is not None else None,
+                "cosine_rank":   cosine_rank,
                 "bm25_score": round(bm25_score, 4) if bm25_score is not None else None,
                 "bm25_rank": bm25_rank,
                 "matched_chunks": si["chunk_count"],

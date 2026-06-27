@@ -141,23 +141,23 @@
             <div class="score-bar"><div class="score-fill final-fill"></div></div>
           </div>
 
-          <!-- 2. L2 Score + rank -->
+          <!-- 2. Cosine Score + rank -->
           <div class="score-card"
-               title="Best chunk L2 distance từ ChromaDB — thấp hơn = liên quan hơn. N/A nếu bài chỉ đến từ BM25.">
+               title="Best chunk Cosine distance từ ChromaDB — thấp hơn = liên quan hơn. N/A nếu bài chỉ đến từ BM25.">
             <div class="score-label">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"/>
                 <line x1="12" y1="8" x2="12" y2="12"/>
                 <line x1="12" y1="16" x2="12.01" y2="16"/>
               </svg>
-              L2 Score
+              Cosine Score
             </div>
             <div class="score-value-row">
-              <div class="score-value l2-score-val"></div>
+              <div class="score-value Cosine-score-val"></div>
               <!-- rank badge xuất hiện bên cạnh score -->
-              <span class="pool-rank-badge l2-rank-badge"></span>
+              <span class="pool-rank-badge Cosine-rank-badge"></span>
             </div>
-            <div class="score-bar"><div class="score-fill l2-fill"></div></div>
+            <div class="score-bar"><div class="score-fill Cosine-fill"></div></div>
           </div>
 
           <!-- 3. BM25 Score + rank -->

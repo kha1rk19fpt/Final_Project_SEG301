@@ -16,7 +16,7 @@ def main():
         client.delete_collection(name= COLLECTION_NAME)
     except Exception:
         pass
-    collection = client.create_collection(name=COLLECTION_NAME, embedding_function=ef)
+    collection = client.create_collection(name=COLLECTION_NAME, embedding_function=ef, metadata={"hnsw:space": "cosine"})
 
     with open (JSON_PATH, "r", encoding="utf-8") as f: #Read data
         data = json.load(f)

@@ -3,7 +3,7 @@ from typing import List, Dict
 
 #hyperparmeter
 RRF_K = 60
-L2_THRESHOLD = 0.62
+COSINE_THRESHOLD = 0.55
 W_SPARSE_HIGH = 1.0
 W_DENSE_HIGH = 1.0
 W_SPARSE_LOW = 0.1
@@ -31,12 +31,12 @@ def calc_weighted_score(distances: List[float]) -> dict:
         "chunk_count": len(distances),
     }
 
-def _get_dense_weight(best_l2: float) -> float:
-    if best_l2 <= L2_THRESHOLD:
+def _get_dense_weight(best_cosine: float) -> float:
+    if best_cosine <= COSINE_THRESHOLD:
         return W_DENSE_HIGH
-    return round(math.exp(-LAMBDA * best_l2), 6)
-def _get_sparse_weight(best_l2: float) -> float:
-    return W_SPARSE_LOW if best_l2 <= L2_THRESHOLD else W_SPARSE_HIGH
+    return round(math.exp(-LAMBDA * best_cosine), 6)
+def _get_sparse_weight(best_cosine: float) -> float:
+    return W_SPARSE_LOW if best_cosine <= COSINE_THRESHOLD else W_SPARSE_HIGH
 
 def asymmetric_weighted_rrf(vector_articles: List[dict], bm25_results: List[dict], top_k: int, full_text_index: dict) -> List[dict]:
     rrf_scores: Dict[str, float] = {}
@@ -45,16 +45,16 @@ def asymmetric_weighted_rrf(vector_articles: List[dict], bm25_results: List[dict
     # xu ly vector
     for rank, art in enumerate(vector_articles, start=1):
         url = art["url"]
-        best_l2 = art["score_info"]["best_score"]
-        w_dense = _get_dense_weight(best_l2)
-        w_sparse = _get_sparse_weight(best_l2)
+        best_cosine = art["score_info"]["best_score"]
+        w_dense = _get_dense_weight(best_cosine)
+        w_sparse = _get_sparse_weight(best_cosine)
         dense_contrib = w_dense * (1.0 / (RRF_K + rank))
         bm25_rank = next((i + 1 for i, r in enumerate(bm25_results) if r["url"] == url), None)
         sparse_contrib = w_sparse * (1.0 / (RRF_K + bm25_rank)) if bm25_rank else 0.0
         rrf_scores[url] = dense_contrib + sparse_contrib
         data[url] = {
             **art,
-            "l2_best_score": best_l2,
+            "cosine_best_score": best_cosine,
             "bm25_score": bm25_score_map.get(url, 0.0)
         }
     # xu ly bm25
@@ -62,9 +62,9 @@ def asymmetric_weighted_rrf(vector_articles: List[dict], bm25_results: List[dict
         url = res["url"]
         if url in data:
             continue
-        fallback_l2  = 1.0 
-        w_dense = _get_dense_weight(fallback_l2)
-        w_sparse = _get_sparse_weight(fallback_l2)
+        fallback_cosine  = 1.0 
+        w_dense = _get_dense_weight(fallback_cosine)
+        w_sparse = _get_sparse_weight(fallback_cosine)
         sparse_contrib  = w_sparse * (1.0 / (RRF_K + rank))
         rrf_scores[url] = sparse_contrib
         full = full_text_index.get(url, {})
@@ -75,7 +75,7 @@ def asymmetric_weighted_rrf(vector_articles: List[dict], bm25_results: List[dict
             "chunk_texts": [],
             "full_text": full.get("text", res.get("text", "")),
             "text_source": "bm25_only",
-            "l2_best_score": None,
+            "cosine_best_score": None,
             "bm25_score": res["bm25_score"]
         }
     ranked_urls = sorted(rrf_scores, key=lambda u: rrf_scores[u], reverse=True)
