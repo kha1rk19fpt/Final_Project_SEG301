@@ -3,11 +3,11 @@ from typing import List, Dict
 
 #hyperparmeter
 RRF_K = 60
-COSINE_THRESHOLD = 0.55
+COSINE_THRESHOLD = 0.6
 W_SPARSE_HIGH = 1.0
 W_DENSE_HIGH = 1.0
 W_SPARSE_LOW = 0.1
-LAMBDA = 3.8376
+LAMBDA = 2.0932
 
 def title_boost_score(query: str, title: str) -> float:
     stop = {'what', 'is', 'the', 'a', 'an', 'how', 'why', 'who', 'does', 'do', 'are', 'was', 'were', 'about', '?', 'long'}
@@ -75,7 +75,7 @@ def asymmetric_weighted_rrf(vector_articles: List[dict], bm25_results: List[dict
             "chunk_texts": [],
             "full_text": full.get("text", res.get("text", "")),
             "text_source": "bm25_only",
-            "cosine_best_score": None,
+            "cosine_best_score": fallback_cosine,
             "bm25_score": res["bm25_score"]
         }
     ranked_urls = sorted(rrf_scores, key=lambda u: rrf_scores[u], reverse=True)

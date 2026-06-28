@@ -17,29 +17,19 @@ function escapeHtml(str) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// ── FIX: Safe querySelector helper ───────────────────────────────────────────
-/**
- * Tìm element an toàn. Nếu không tìm thấy → log warning thay vì crash.
- * @param {Element} root - Element cha để tìm kiếm
- * @param {string}  sel  - CSS selector
- * @returns {Element|null}
- */
 function qs(root, sel) {
   const el = root.querySelector(sel);
   if (!el) {
-    console.warn(`[WikiSearch] querySelector("${sel}") trả về null.`,
-      'Kiểm tra lại class name trong index.html template có khớp không.');
+    console.warn(`[WikiSearch] querySelector("${sel}") trả về null.`);
   }
   return el;
 }
 
-/** Gán textContent an toàn — bỏ qua nếu element là null */
 function setText(root, sel, value) {
   const el = qs(root, sel);
   if (el) el.textContent = value;
 }
 
-/** Gán href an toàn */
 function setHref(root, sel, value) {
   const el = qs(root, sel);
   if (el) el.href = value;
@@ -126,7 +116,6 @@ async function runSearch(query, k) {
 
     const data = await res.json();
 
-    // FIX: Kiểm tra cấu trúc response trước khi render
     if (!data || typeof data !== 'object') {
       throw new Error('Response từ backend không hợp lệ (không phải JSON object).');
     }
@@ -134,7 +123,6 @@ async function runSearch(query, k) {
     renderResults(data);
 
   } catch (err) {
-    // FIX: Hiển thị lỗi rõ ràng hơn — bao gồm cả JS error lẫn network error
     const msg = err instanceof TypeError
       ? `Lỗi JavaScript: ${err.message} — Kiểm tra Console (F12) để biết thêm.`
       : err.message || 'Không thể kết nối backend. Kiểm tra uvicorn đang chạy trên port 8000.';
@@ -146,7 +134,7 @@ async function runSearch(query, k) {
   }
 }
 
-// ── Render Results ────────────────────────────────────────────────────────────
+// ── Render Results (Đã sửa lỗi thống kê Min/Max) ─────────────────────────────
 function renderResults(data) {
   const {
     optimized_search_keyword,
@@ -155,7 +143,6 @@ function renderResults(data) {
     data: articles,
   } = data;
 
-  // FIX: null-check từng phần tử DOM trước khi gán
   if (statusText) statusText.textContent = `${total_results} result${total_results !== 1 ? 's' : ''} found`;
   if (metaQuery)  metaQuery.textContent  = `🔍 "${optimized_search_keyword}"`;
   if (metaTime)   metaTime.textContent   = `⚡ ${processing_time_ms} ms`;
@@ -166,24 +153,32 @@ function renderResults(data) {
     return;
   }
 
-  // Tính score range cho score bars – dùng final_rrf_score (field mới từ backend)
-  const scores   = articles.map(a => a.final_rrf_score).filter(s => s != null);
-  const minScore = scores.length ? Math.min(...scores) : 0;
-  const maxScore = scores.length ? Math.max(...scores) : 1;
+  // Lấy dải điểm riêng biệt cho từng metric
+  const rrfScores = articles.map(a => a.final_rrf_score).filter(s => s != null);
+  const cosScores = articles.map(a => a.cosine_score).filter(s => s != null);
+  const bm25Scores = articles.map(a => a.bm25_score).filter(s => s != null);
+
+  const stats = {
+    minRrf: rrfScores.length ? Math.min(...rrfScores) : 0,
+    maxRrf: rrfScores.length ? Math.max(...rrfScores) : 1,
+    minCos: cosScores.length ? Math.min(...cosScores) : 0,
+    maxCos: cosScores.length ? Math.max(...cosScores) : 1,
+    minBm25: bm25Scores.length ? Math.min(...bm25Scores) : 0,
+    maxBm25: bm25Scores.length ? Math.max(...bm25Scores) : 1,
+  };
 
   articles.forEach((article, idx) => {
     try {
-      const card = buildCard(article, idx, minScore, maxScore);
+      const card = buildCard(article, idx, stats);
       if (card) resultsList.appendChild(card);
     } catch (err) {
-      // FIX: Catch lỗi từng card riêng lẻ — một card lỗi không làm hỏng toàn bộ
       console.error(`[WikiSearch] Lỗi khi render card #${idx + 1}:`, err);
     }
   });
 }
 
-// ── Build a Single Result Card ────────────────────────────────────────────────
-function buildCard(article, idx, minScore, maxScore) {
+// ── Build a Single Result Card (Đã áp dụng thông số stats) ───────────────────
+function buildCard(article, idx, stats) {
   if (!cardTemplate) {
     console.error('[WikiSearch] Không tìm thấy #resultCardTemplate trong HTML!');
     return null;
@@ -199,17 +194,11 @@ function buildCard(article, idx, minScore, maxScore) {
   const frag = cardTemplate.content.cloneNode(true);
   const card = frag.querySelector('.result-card');
 
-  if (!card) {
-    console.error('[WikiSearch] Template không có .result-card — kiểm tra index.html');
-    return frag;
-  }
+  if (!card) return frag;
 
   card.style.animationDelay = `${idx * 0.07}s`;
 
-  // ── Rank badge ──
   setText(card, '.rank-badge', `#${rank}`);
-
-  // ── Title & URL ──
   setText(card, '.card-title', title || 'Untitled');
 
   const urlEl = qs(card, '.card-url');
@@ -219,7 +208,6 @@ function buildCard(article, idx, minScore, maxScore) {
     urlEl.title       = url;
   }
 
-  // ── Source badge ──
   const sourceBadge = qs(card, '.source-badge');
   if (sourceBadge) {
     if (text_source === 'full_article') {
@@ -231,7 +219,6 @@ function buildCard(article, idx, minScore, maxScore) {
     }
   }
 
-  // ── Content preview ──
   const preview = qs(card, '.content-preview');
   if (preview) {
     const plainPreview = (content || '')
@@ -247,8 +234,6 @@ function buildCard(article, idx, minScore, maxScore) {
       : 'No content available.';
   }
 
-  // ── Score values ──
-  // Mapping: FINAL SCORE=final_rrf_score | COSINE SCORE=cosine_score | BM25 SCORE=bm25_score
   const wEl = qs(card, '.final-score-val');
   const bEl = qs(card, '.cosine-score-val');
   const aEl = qs(card, '.bm25-score-val');
@@ -259,36 +244,47 @@ function buildCard(article, idx, minScore, maxScore) {
   if (aEl) aEl.textContent = bm25_score      != null ? bm25_score.toFixed(4)      : 'N/A';
   if (cEl) cEl.textContent = matched_chunks;
 
-  // ── Score color coding ──
-  // final_rrf_score: cao hơn = tốt hơn (RRF score), nên đảo chiều màu
   colorScoreRRF(wEl, final_rrf_score);
-  // cosine_score: thấp hơn = tốt hơn (distance)
-  colorScore(bEl, cosine_score);
-  // bm25_score: cao hơn = tốt hơn, đảo chiều màu
+  colorScore(bEl, cosine_score); 
   colorScoreBM25(aEl, bm25_score);
 
-  // ── Rank badges phụ (cosine rank & bm25 rank) ──
-  const cosineRankEl = qs(card, '.cosine-rank-val');
-  const bm25RankEl   = qs(card, '.bm25-rank-val');
-  if (cosineRankEl) cosineRankEl.textContent = cosine_rank != null ? `#${cosine_rank}` : '—';
-  if (bm25RankEl)   bm25RankEl.textContent   = bm25_rank   != null ? `#${bm25_rank}`   : '—';
+  const cosineRankEl = qs(card, '.cosine-rank-badge');
+  const bm25RankEl   = qs(card, '.bm25-rank-badge');
+  if (cosineRankEl) {
+    if (cosine_rank != null) {
+      cosineRankEl.textContent = `#${cosine_rank} in vector`;
+    } else {
+      cosineRankEl.textContent = '';
+      cosineRankEl.classList.add('rank-na');
+    }
+  }
+  if (bm25RankEl) {
+    if (bm25_rank != null) {
+      bm25RankEl.textContent = `#${bm25_rank} in BM25`;
+    } else {
+      bm25RankEl.textContent = '';
+      bm25RankEl.classList.add('rank-na');
+    }
+  }
 
-  // Score bars
-  const range = maxScore - minScore || 1;
-  // cosine distance: thấp = tốt → fill nhiều khi score nhỏ
-  const relFill    = (s) => s == null ? 0 : Math.max(10, Math.min(100, 100 - ((s - minScore) / range) * 80));
-  // RRF / BM25: cao = tốt → fill nhiều khi score lớn
-  const relFillRRF = (s) => s == null ? 0 : Math.max(10, Math.min(100, ((s - minScore) / range) * 80 + 20));
+  // Tính thanh bar với range riêng biệt
+  const rrfRange = stats.maxRrf - stats.minRrf || 1;
+  const cosRange = stats.maxCos - stats.minCos || 1;
+  const bm25Range = stats.maxBm25 - stats.minBm25 || 1;
+
+  const relFillRrf = (s) => s == null ? 0 : Math.max(10, Math.min(100, ((s - stats.minRrf) / rrfRange) * 80 + 20));
+  const relFillBm25 = (s) => s == null ? 0 : Math.max(10, Math.min(100, ((s - stats.minBm25) / bm25Range) * 80 + 20));
+  const relFillCos = (s) => s == null ? 0 : Math.max(10, Math.min(100, 100 - ((s - stats.minCos) / cosRange) * 80));
 
   const wFill = qs(card, '.final-fill');
   const bFill = qs(card, '.cosine-fill');
   const aFill = qs(card, '.bm25-fill');
 
-  if (wFill && final_rrf_score != null) animateFill(wFill, relFillRRF(final_rrf_score));
-  if (bFill && cosine_score    != null) animateFill(bFill, relFill(cosine_score));
-  if (aFill && bm25_score      != null) animateFill(aFill, relFillRRF(bm25_score));
+  if (wFill && final_rrf_score != null) animateFill(wFill, relFillRrf(final_rrf_score));
+  if (bFill && cosine_score    != null) animateFill(bFill, relFillCos(cosine_score));
+  if (aFill && bm25_score      != null) animateFill(aFill, relFillBm25(bm25_score));
 
-  // ── Expand / Collapse ──
+  // Expand logic
   const expandBtn      = qs(card, '.expand-btn');
   const cardExpanded   = qs(card, '.card-expanded');
   const renderedPane   = qs(card, '[data-view="rendered"]');
@@ -297,7 +293,6 @@ function buildCard(article, idx, minScore, maxScore) {
   const wikiBtn        = qs(card, '.open-wiki-btn');
   const tabs           = card.querySelectorAll('.expand-tab');
 
-  // Tab switching
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       tabs.forEach(t => t.classList.remove('active'));
@@ -341,8 +336,6 @@ function buildCard(article, idx, minScore, maxScore) {
 }
 
 // ── Score color helpers ───────────────────────────────────────────────────────
-
-/** cosine distance: THẤP hơn = tốt hơn → green khi < 0.35 */
 function colorScore(el, score) {
   if (!el) return;
   el.classList.remove('score-good', 'score-mid', 'score-bad');
@@ -351,8 +344,6 @@ function colorScore(el, score) {
   else if (score < 0.60) el.classList.add('score-mid');
   else                   el.classList.add('score-bad');
 }
-
-/** RRF score: CAO hơn = tốt hơn → đảo chiều so với cosine */
 function colorScoreRRF(el, score) {
   if (!el) return;
   el.classList.remove('score-good', 'score-mid', 'score-bad');
@@ -361,8 +352,6 @@ function colorScoreRRF(el, score) {
   else if (score > 0.01) el.classList.add('score-mid');
   else                   el.classList.add('score-bad');
 }
-
-/** BM25 score: CAO hơn = tốt hơn (nhiều keyword match hơn) */
 function colorScoreBM25(el, score) {
   if (!el) return;
   el.classList.remove('score-good', 'score-mid', 'score-bad');
@@ -372,16 +361,15 @@ function colorScoreBM25(el, score) {
   else                el.classList.add('score-bad');
 }
 
-// ── Error State ───────────────────────────────────────────────────────────────
+// ── Utilities ─────────────────────────────────────────────────────────────────
 function showError(message) {
   if (errorDesc) errorDesc.textContent = message;
   setVisible(errorState, true);
   setVisible(loadingState, false);
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function setVisible(el, visible) {
-  if (el) el.hidden = !visible;   // FIX: guard null
+  if (el) el.hidden = !visible;
 }
 
 function truncateUrl(url, maxLen) {
@@ -395,7 +383,7 @@ function truncateUrl(url, maxLen) {
 }
 
 function animateFill(el, pct) {
-  if (!el) return;   // FIX: guard null
+  if (!el) return;
   el.style.width = '0%';
   requestAnimationFrame(() => {
     setTimeout(() => { el.style.width = pct + '%'; }, 80);

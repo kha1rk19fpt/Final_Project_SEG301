@@ -9,7 +9,6 @@ from src.backend.utils.query_extraction import QueryExtraction
 from src.backend.utils.md_formatter import MarkdownFormatter
 from src.backend.utils.bm25_kw_search import BM25Search
 from src.backend.utils.scoring import calc_weighted_score, title_boost_score, asymmetric_weighted_rrf
- 
 
 # initialize Hyperparameter
 VECTOR_FETCH_N = 300
@@ -110,9 +109,9 @@ class SearchService:
                 text_source ="merged_chunks"
 
             md_path = self.md_formatter.save_to_markdown(title=title, url=url, content=full_text, chunk_idx=rank)
-            
-            cosine_score = si.get("best_score")
-            if cosine_score == 999:
+        
+            cosine_score = article.get("cosine_best_score")
+            if cosine_score is None or cosine_score >= 999:
                 cosine_score = None
             bm25_score = article.get("bm25_score", 0.0)
             final_rrf = article.get("final_rrf_score", 0.0)
