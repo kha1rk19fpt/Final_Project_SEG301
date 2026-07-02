@@ -1,5 +1,6 @@
 import json
 import math
+import re
 from collections import Counter
 
 class BM25Search:
@@ -15,7 +16,7 @@ class BM25Search:
         self.build_index()
     
     def tokenize(self, text: str) -> list:
-        return text.lower().split()
+        return re.findall(r'[a-z0-9]+', text.lower())
     def build_index(self):
         df = Counter()
         total_len = 0

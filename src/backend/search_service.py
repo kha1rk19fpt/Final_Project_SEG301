@@ -42,6 +42,20 @@ class SearchService:
             print(f"[SearchService] Warning: Can not load full-text index: {e}")
         return index
 
+    @staticmethod
+    def _merge_bm25_results(list_a: list, list_b: list, top_k: int) -> list:
+        #Gop 2 danh sach ket qua tu BM25: 1 la list keyword, 2 la raw query
+        #Viec gop 2 ds ket qua la can raw query quet sach lai nhung gi keyword bo lo
+        merged: dict = {}
+        for item in list_a + list_b:
+            url = item.get("url", "")
+            if not url:
+                continue
+            if url not in merged or item["bm25_score"] > merged[url]["bm25_score"]:
+                merged[url] = item
+        ranked = sorted(merged.values(), key=lambda x: x["bm25_score"], reverse=True)
+        return ranked[:top_k]
+
     def search(self, query: str, top_k: int = 5) -> dict:
         start_time = time.time()
 
@@ -50,7 +64,7 @@ class SearchService:
 
         collection_size = self.collection.count()
         fetch_n = min(VECTOR_FETCH_N, collection_size)
-        res = self.collection.query(query_texts=[search_kw],n_results=fetch_n)
+        res = self.collection.query(query_texts=[query],n_results=fetch_n)
  
         grouped: dict[str, dict] = defaultdict(lambda: {"distances": [], "chunk_texts": [], "title": "", "url": ""})
         if res["documents"] and len(res["documents"][0]) > 0:
@@ -83,9 +97,13 @@ class SearchService:
 
         for cosine_rank, art in enumerate(scored_articles, start=1):
             art["cosine_rank"] = cosine_rank
-        bm25_results = self.bm25.search(query, top_k=BM25_FETCH_N)
+
+        bm25_kw_results = self.bm25.search(search_kw, top_k=BM25_FETCH_N)
+        bm25_raw_results = self.bm25.search(query, top_k=BM25_FETCH_N) if query.strip().lower() != search_kw.strip().lower() else []
+        bm25_results = self._merge_bm25_results(bm25_kw_results, bm25_raw_results, top_k=BM25_FETCH_N)
         for bm25_rank, item in enumerate(bm25_results, start=1):
             item["bm25_rank"] = bm25_rank
+
         top_articles = asymmetric_weighted_rrf(scored_articles, bm25_results, top_k, self._full_text_index)
         bm25_rank_map = {r["url"]:r["bm25_rank"] for r in bm25_results}
 

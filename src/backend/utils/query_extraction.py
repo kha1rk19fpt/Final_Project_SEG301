@@ -1,4 +1,5 @@
 import string 
+import re
 import nltk
 from rake_nltk import Rake
 from nltk.corpus import stopwords
@@ -25,8 +26,7 @@ class QueryExtraction:
         self.stop_words.update(custom_sw)
 
     def tokenization(self, raw_query:str)-> list:
-        lower_query = raw_query.lower()
-        tokens = lower_query.split()
+        tokens = re.findall(r'[a-z0-9]+', raw_query.lower())
         return tokens
 
     def extract(self, raw_query: str) -> dict:
