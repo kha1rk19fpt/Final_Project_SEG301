@@ -6,7 +6,6 @@ from collections import defaultdict
 from chromadb.utils import embedding_functions
 from src.backend.config import VDB_PATH, EMBEDDING_MODEL_NAME, COLLECTION_NAME, BASE_DIR, JSON_PATH
 from src.backend.utils.query_extraction import QueryExtraction
-from src.backend.utils.md_formatter import MarkdownFormatter
 from src.backend.utils.bm25_kw_search import BM25Search
 from src.backend.utils.scoring import calc_weighted_score, title_boost_score, asymmetric_weighted_rrf
 
@@ -20,8 +19,6 @@ class SearchService:
         self.ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=EMBEDDING_MODEL_NAME)
         self.collection = self.client.get_collection(name=COLLECTION_NAME,embedding_function=self.ef)
         self.extraction = QueryExtraction()
-        md_output_dir = os.path.join(BASE_DIR, 'data', 'markdown_docs')
-        self.md_formatter = MarkdownFormatter(OUTPUT_DIR=md_output_dir)
         self.bm25 = BM25Search(json_path=JSON_PATH)
         self._full_text_index = self._build_full_text_index()
 
@@ -125,8 +122,6 @@ class SearchService:
                 full_text ="\n\n---\n\n".join(article["chunk_texts"])
                 title=article["title"]
                 text_source ="merged_chunks"
-
-            md_path = self.md_formatter.save_to_markdown(title=title, url=url, content=full_text, chunk_idx=rank)
         
             cosine_score = article.get("cosine_best_score")
             if cosine_score is None or cosine_score >= 999:
@@ -141,7 +136,6 @@ class SearchService:
                 "title": title,
                 "url": url,
                 "content": full_text,
-                "markdown_file": md_path,
                 "text_source": text_source,
                 "final_rrf_score": final_rrf,
                 "cosine_score": round(cosine_score, 4) if cosine_score is not None else None,
