@@ -4,6 +4,7 @@ from tqdm import tqdm
 from chromadb.utils import embedding_functions
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_huggingface import HuggingFaceEmbeddings
+from src.backend.utils.data_loader import load_articles
 from src.backend.config import EMBEDDING_MODEL_NAME, COLLECTION_NAME, VDB_PATH, JSON_PATH
 
 def main():
@@ -18,8 +19,7 @@ def main():
         pass
     collection = client.create_collection(name=COLLECTION_NAME, embedding_function=ef, metadata={"hnsw:space": "cosine"})
 
-    with open (JSON_PATH, "r", encoding="utf-8") as f: #Read data
-        data = json.load(f)
+    data = load_articles(JSON_PATH)
     docs = []
     metadatas = []
     ids = []

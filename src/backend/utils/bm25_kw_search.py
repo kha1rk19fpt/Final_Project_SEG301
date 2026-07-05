@@ -1,12 +1,11 @@
-import json
 import math
 import re
 from collections import Counter
+from src.backend.utils.data_loader import load_articles
 
 class BM25Search:
     def __init__(self, json_path:str):
-        with open(json_path, "r", encoding="utf-8") as f:
-            self.corpus = json.load(f)
+        self.corpus = load_articles(json_path)
         self.k1 = 1.5
         self.b = 0.75
         self.tokenized = [self.tokenize(doc.get("title", "") + " " + doc.get("text", "")) for doc in self.corpus]
@@ -30,11 +29,13 @@ class BM25Search:
         self.avg_dl = total_len / n if n else 1
         for term, freq in df.items():
             self.idf[term] = math.log((n - freq + 0.5) / (freq + 0.5) + 1)
+        self.tokenized = None
+
     def search(self, query: str, top_k: int = 10) -> list:
         query_terms = self.tokenize(query)
         scores = []
         for idx, tf in enumerate(self.doc_freq):
-            dl    = sum(tf.values())
+            dl = sum(tf.values())
             score = 0.0
             for term in query_terms:
                 if term not in tf:

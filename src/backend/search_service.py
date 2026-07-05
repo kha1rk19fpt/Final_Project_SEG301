@@ -1,13 +1,12 @@
-import os
 import time
-import json
 import chromadb
 from collections import defaultdict
 from chromadb.utils import embedding_functions
-from src.backend.config import VDB_PATH, EMBEDDING_MODEL_NAME, COLLECTION_NAME, BASE_DIR, JSON_PATH
+from src.backend.config import VDB_PATH, EMBEDDING_MODEL_NAME, COLLECTION_NAME, JSON_PATH
 from src.backend.utils.query_extraction import QueryExtraction
 from src.backend.utils.bm25_kw_search import BM25Search
 from src.backend.utils.scoring import calc_weighted_score, title_boost_score, asymmetric_weighted_rrf
+from src.backend.utils.data_loader import load_articles
 
 # initialize Hyperparameter
 VECTOR_FETCH_N = 300
@@ -25,8 +24,7 @@ class SearchService:
     def _build_full_text_index(self) -> dict:
         index = {}
         try:
-            with open(JSON_PATH, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            data = load_articles(JSON_PATH)
             for article in data:
                 url = article.get("url", "").strip()
                 if url:
