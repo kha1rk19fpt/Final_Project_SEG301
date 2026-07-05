@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 
 AI_HINTS = [
-    'intelligen', 'learning', 'neural', 'network', 'transformer', 'language_model','nlp', 'classifi', 'regression', 'cluster', ''
+    'intelligen', 'learning', 'neural', 'network', 'transformer', 'language_model','nlp', 'classifi', 'regression', 'cluster',
     'inference', 'bayes', 'markov','gradient', 'backpropagation', 'perceptron', 'attention', 'embedding',
     'algorithm', 'comput', 'data', 'software', 'program', 'automat', 'robot','vision', 'recognition', 'semantic', 'graph', 'search', 'optimization',
     'statistic', 'probabilit', 'matrix', 'vector', 'calculus', 'linear_algebra','entropy', 'stochastic', 'mathematic', 'model',
