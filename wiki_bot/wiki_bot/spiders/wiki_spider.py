@@ -3,19 +3,37 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 
+AI_HINTS = [
+    'intelligen', 'learning', 'neural', 'network', 'transformer', 'language_model','nlp', 'classifi', 'regression', 'cluster', ''
+    'inference', 'bayes', 'markov','gradient', 'backpropagation', 'perceptron', 'attention', 'embedding',
+    'algorithm', 'comput', 'data', 'software', 'program', 'automat', 'robot','vision', 'recognition', 'semantic', 'graph', 'search', 'optimization',
+    'statistic', 'probabilit', 'matrix', 'vector', 'calculus', 'linear_algebra','entropy', 'stochastic', 'mathematic', 'model',
+]
+
+
 class WikipediaSpider(scrapy.Spider):
     name = "wiki_spider"
     allowed_domains = ["en.wikipedia.org"]
-    start_urls = ["https://en.wikipedia.org/wiki/Deep_learning"]
+    start_urls = [
+        "https://en.wikipedia.org/wiki/Artificial_intelligence",
+        "https://en.wikipedia.org/wiki/Deep_learning",
+        "https://en.wikipedia.org/wiki/Machine_learning",
+        "https://en.wikipedia.org/wiki/Natural_language_processing",
+        "https://en.wikipedia.org/wiki/Computer_vision",
+        "https://en.wikipedia.org/wiki/Reinforcement_learning",
+        "https://en.wikipedia.org/wiki/Neural_network_(machine_learning)",
+        "https://en.wikipedia.org/wiki/Large_language_model",
+    ]
     custom_settings = {
-        'DEPTH_LIMIT': 3,
-        'CLOSESPIDER_ITEMCOUNT': 5000
+        'DEPTH_LIMIT': 5,
+        'CLOSESPIDER_ITEMCOUNT': 50000,
+        'JOBDIR': 'crawls/wiki50k',
     }
 
     def __init__(self, *args, **kwargs):
         super(WikipediaSpider, self).__init__(*args, **kwargs)
         self.scraped_count = 0
-        
+
     def parse(self, response):
         title_element = response.css("span.mw-page-title-main::text").get()
         if not title_element:
@@ -25,10 +43,10 @@ class WikipediaSpider(scrapy.Spider):
         content_html = response.css("div.mw-parser-output").get()
         if content_html:
             soup = BeautifulSoup(content_html, 'html.parser')
-            
+
             for ref in soup.find_all('sup', class_='reference'):
                 ref.decompose()
-                
+
             unwanted_sections = ['References', 'See_also', 'External_links', 'Further_reading']
             for section_id in unwanted_sections:
                 heading_span = soup.find(id=section_id)
@@ -37,25 +55,28 @@ class WikipediaSpider(scrapy.Spider):
                     for sibling in h2_tag.find_next_siblings():
                         sibling.decompose()
                     h2_tag.decompose()
-            
+
             for box in soup.find_all(['div', 'table'], class_=['navbox', 'reflist', 'metadata', 'mw-empty-elt']):
                 box.decompose()
-                
+
             full_text = md(str(soup), heading_style="ATX", strip=["a", "img"]).strip()
         else:
             full_text = ""
 
         if full_text and len(full_text) > 100:
             self.scraped_count += 1
+            if self.scraped_count % 500 == 0:
+                self.logger.info(f"[PROGRESS] Đã crawl {self.scraped_count} bài")
             yield {
                 'id': self.scraped_count,
                 'title': title,
                 'url': response.url,
                 'text': full_text
             }
-            
+
         all_links = response.css("div.mw-parser-output a::attr(href)").getall()
         for link in all_links:
             if link.startswith("/wiki/") and not any(x in link for x in [":", "#", "Main_Page"]):
-                next_page = urljoin(response.url, link)
-                yield scrapy.Request(url=next_page, callback=self.parse)
+                link_lower = link.lower()
+                if any(h in link_lower for h in AI_HINTS):
+                    yield scrapy.Request(url=urljoin(response.url, link), callback=self.parse)

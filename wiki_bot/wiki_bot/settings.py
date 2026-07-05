@@ -88,9 +88,9 @@ AUTOTHROTTLE_MAX_DELAY = 3.0
 
 # Set settings whose default value is deprecated to a future-proof value
 FEEDS = {
-    '../data/raw/wiki_crawler_dataset.json': {
-        'format': 'json',
+    '../data/raw/wiki_crawler_dataset.jsonl': {
+        'format': 'jsonlines',
         'encoding': 'utf-8',
-        'overwrite': True, # Tự động ghi đè file cũ khi chạy lại lệnh crawl
+        'overwrite': False,
     },
 }
