@@ -3,13 +3,6 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 
-AI_HINTS = [
-    'intelligen', 'learning', 'neural', 'network', 'transformer', 'language_model','nlp', 'classifi', 'regression', 'cluster',
-    'inference', 'bayes', 'markov','gradient', 'backpropagation', 'perceptron', 'attention', 'embedding',
-    'algorithm', 'comput', 'data', 'software', 'program', 'automat', 'robot','vision', 'recognition', 'semantic', 'graph', 'search', 'optimization',
-    'statistic', 'probabilit', 'matrix', 'vector', 'calculus', 'linear_algebra','entropy', 'stochastic', 'mathematic', 'model',
-]
-
 
 class WikipediaSpider(scrapy.Spider):
     name = "wiki_spider"
@@ -25,7 +18,7 @@ class WikipediaSpider(scrapy.Spider):
         "https://en.wikipedia.org/wiki/Large_language_model",
     ]
     custom_settings = {
-        'DEPTH_LIMIT': 5,
+        'DEPTH_LIMIT': 4,
         'CLOSESPIDER_ITEMCOUNT': 50000,
         'JOBDIR': 'crawls/wiki50k',
     }
@@ -33,6 +26,10 @@ class WikipediaSpider(scrapy.Spider):
     def __init__(self, *args, **kwargs):
         super(WikipediaSpider, self).__init__(*args, **kwargs)
         self.scraped_count = 0
+
+    def start_requests(self):
+        for url in self.start_urls:
+            yield scrapy.Request(url, callback=self.parse, dont_filter=False)
 
     def parse(self, response):
         title_element = response.css("span.mw-page-title-main::text").get()
@@ -66,7 +63,7 @@ class WikipediaSpider(scrapy.Spider):
         if full_text and len(full_text) > 100:
             self.scraped_count += 1
             if self.scraped_count % 500 == 0:
-                self.logger.info(f"[PROGRESS] Đã crawl {self.scraped_count} bài")
+                self.logger.info(f"[PROGRESS] Da crawl {self.scraped_count} bai")
             yield {
                 'id': self.scraped_count,
                 'title': title,
@@ -77,6 +74,4 @@ class WikipediaSpider(scrapy.Spider):
         all_links = response.css("div.mw-parser-output a::attr(href)").getall()
         for link in all_links:
             if link.startswith("/wiki/") and not any(x in link for x in [":", "#", "Main_Page"]):
-                link_lower = link.lower()
-                if any(h in link_lower for h in AI_HINTS):
-                    yield scrapy.Request(url=urljoin(response.url, link), callback=self.parse)
+                yield scrapy.Request(url=urljoin(response.url, link), callback=self.parse)
