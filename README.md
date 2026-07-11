@@ -20,8 +20,8 @@ Hệ thống có **2 bộ dữ liệu độc lập**, tùy chỉnh ở `DATA_PRO
 
 | Profile | Dùng cho | Dataset | Vector DB |
 |---|---|---|---|
-| `prod` (mặc định) | Hệ thống chính (chứa 50k bài) | `data/raw/wiki_crawler_dataset.jsonl` | `data/vector/` |
-| `eval` | Đánh giá mô hình (chứa 5k bài) | `data/eval/raw/wiki_crawler_dataset.json` | `data/eval/vector/` |
+| `prod` (mặc định) | Hệ thống chính | `data/raw/wiki_crawler_dataset.jsonl` | `data/vector/` |
+| `eval` | Đánh giá mô hình | `data/eval/raw/wiki_crawler_dataset.json` | `data/eval/vector/` |
 
 
 ---
@@ -43,12 +43,12 @@ run_pipeline.bat
 ```
 
 Nhiệm vụ của file:
-1. Scrapy sẽ crawl wikipedia đến khi đạt khoảng **50.000** bài viết xoay quanh về AI(nếu chưa chạm mốc 50k bài mà đã hết bài viết thì sẽ tạm dừng tại đó)  -> `data/raw/wiki_crawler_dataset.jsonl`
+1. Scrapy sẽ crawl wikipedia đến khi đạt khoảng **50.000** bài viết-phần lớn là các kiến thức liên quan về AI (nếu chưa chạm mốc 50k bài mà đã hết bài viết thì sẽ tạm dừng tại đó)  -> `data/raw/wiki_crawler_dataset.jsonl`
 2. Semantic chunking + vector embedding -> `data/vector/`
 
 **Lưu ý:**
-- Tổng thời gian thực hiện(Ryzen 7 7840H + RTX4060 + Ram 16gb) **Khoảng gần 45h** (crawl và xử lí duplicate khoảng 11h30m, embedding khoảng 31h26m).
-- Theo dõi tiến độ qua 2 file: `pipeline_status.txt` (nhật kí từng mốc) và `crawl_log.txt` (log crawl của scrapy).
+- Tổng thời gian thực hiện(Ryzen 7 7840H + RTX4060 + Ram 16gb) **Khoảng gần 34h10m** (crawl và xử lí duplicate khoảng 11h30m, embedding khoảng 26h40m).
+- Theo dõi tiến độ qua 2 file: `pipeline_status.txt` (nhật kí từng mốc) và `crawl_log.txt` (log crawl của scrapy) - có trong link drive đã gửi bên trên.
 - Crawl bị ngắt giữa chừng như mất điện hoặc lỡ nhấn Ctrl+C chỉ cần chạy lại `run_pipeline.bat` là hệ thống sẽ tiếp tục bắt đầu từ chỗ vừa ngắt, không bị mất dữ liệu.
 - Nếu muốn crawl lại từ đầu xóa cả 2 thứ trước khi chạy - file `data\raw\wiki_crawler_dataset.jsonl` và thư mục `wiki_bot\crawls\wiki50k`.
 
@@ -108,17 +108,17 @@ uvicorn src.backend.main:app --port 8001 #sử dụng cổng backend riêng
 
 ```
 |--- data/
-│   |--- raw/                  # Dataset 50k (.jsonl) — profile prod
-│   |--- vector/               # Vector DB 50k — profile prod
+│   |--- raw/                  # Dataset 50k (.jsonl) - profile prod
+│   |--- vector/               # Vector DB 50k - profile prod
 │   |--- eval/
-│       |--- raw/              # Dataset đánh giá (.json) — profile eval
-│       |--- vector/           # Vector DB đánh giá — profile eval
+│       |--- raw/              # Dataset đánh giá (.json) - profile eval
+│       |--- vector/           # Vector DB đánh giá - profile eval
 |--- wiki_bot/                 # Scrapy crawler (wiki_spider)
 |--- src/
 │   |--- backend/              # FastAPI + SearchService + scoring
-│   |--- frontend/             # Giao diện web (được backend phục vụ tại /)
+│   |--- frontend/             # Giao diện web
 │   |--- indexing/             # build_vector_db (chunking + embedding)
-|--- evaluate/                 # Notebook đánh giá + ground truth
+|--- evaluate/                 # File notebook đánh giá và kết quả
 |--- run_pipeline.bat          # Pipeline tự động: crawl 50k + embedding
 |--- requirements.txt
 ```
