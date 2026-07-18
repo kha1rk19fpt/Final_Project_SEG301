@@ -88,7 +88,7 @@ Backend khởi động mất khoảng **3-6p** (nạp model + BM25 index).
 
 ## 5. Đánh giá hệ thống
 
-Đánh giá chạy trên **bộ dữ liệu eval riêng** (profile `eval`) với 22 truy vấn ground-truth, đo 2 metrics **Precision@K(K=10), MAP**. Cách chạy như sau:
+Đánh giá chạy trên **bộ dữ liệu eval riêng** (profile `eval`) với 20 truy vấn ground-truth, đo 2 metrics **Precision@K(K=10), MAP**. Cách chạy như sau:
 
 **Bước 1:** nhập lệnh này vào terminal
 ```bash
