@@ -3,62 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WikiSearch – Semantic Wikipedia Search Engine</title>
+  <title>WikiSearch — Semantic Wikipedia Search</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <div class="bg-particles" aria-hidden="true">
-    <span></span><span></span><span></span><span></span>
-    <span></span><span></span><span></span><span></span>
-  </div>
-
   <header class="hero" id="hero">
     <div class="hero-logo"><span class="logo-wiki">Wiki</span><span class="logo-search">Search</span></div>
-    <p class="hero-tagline">Semantic search across Wikipedia — powered by vector embeddings</p>
+    <p class="hero-tagline">Semantic search across Wikipedia — dense vectors and BM25, fused with weighted RRF</p>
 
     <form class="search-form" id="searchForm" role="search" aria-label="Search Wikipedia">
       <div class="search-box">
-        <span class="search-icon" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-        </span>
-        <input id="searchInput" type="search" class="search-input" placeholder='Ask anything… e.g. "What is quantum entanglement?"' autocomplete="off" aria-label="Search query" />
+        <input id="searchInput" type="search" class="search-input"
+               placeholder="What is quantum entanglement?"
+               autocomplete="off" aria-label="Search query" />
         <div class="search-controls">
-          <label class="top-k-label" for="topKSelect" title="Number of results to display">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-              <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-            </svg>
-            Top
-          </label>
+          <label class="top-k-label" for="topKSelect">Top</label>
           <select id="topKSelect" class="top-k-select" aria-label="Number of results">
             <option value="3">3</option><option value="5" selected>5</option>
             <option value="8">8</option><option value="10">10</option>
             <option value="15">15</option><option value="20">20</option>
           </select>
-          <button id="searchBtn" type="submit" class="search-btn" aria-label="Search">
-            <span class="btn-text">Search</span>
-            <span class="btn-icon" aria-hidden="true">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-              </svg>
-            </span>
-          </button>
+          <button id="searchBtn" type="submit" class="search-btn">Search</button>
         </div>
       </div>
     </form>
 
     <div class="suggestions" id="suggestions" aria-label="Suggested queries">
-      <button class="pill" data-query="History of artificial intelligence">🤖 History of AI</button>
-      <button class="pill" data-query="How does photosynthesis work">🌿 Photosynthesis</button>
-      <button class="pill" data-query="What is black hole">🌌 Black Holes</button>
-      <button class="pill" data-query="The French Revolution causes">⚔️ French Revolution</button>
-      <button class="pill" data-query="DNA structure and function">🧬 DNA Structure</button>
+      <button class="pill" data-query="History of artificial intelligence">History of AI</button>
+      <button class="pill" data-query="How does photosynthesis work">Photosynthesis</button>
+      <button class="pill" data-query="What is black hole">Black holes</button>
+      <button class="pill" data-query="The French Revolution causes">French Revolution</button>
+      <button class="pill" data-query="DNA structure and function">DNA structure</button>
     </div>
   </header>
 
@@ -75,22 +54,20 @@
       </div>
     </div>
 
-    <div class="loading-state" id="loadingState" hidden aria-label="Searching…">
-      <div class="spinner-ring"><div></div><div></div><div></div><div></div></div>
-      <p class="loading-text">Searching through Wikipedia…</p>
+    <div class="loading-state" id="loadingState" hidden aria-label="Searching">
+      <div class="loading-bar" aria-hidden="true"><span></span></div>
+      <p class="loading-text">Retrieving and re-ranking</p>
     </div>
 
     <div class="error-state" id="errorState" hidden role="alert">
-      <div class="error-icon" aria-hidden="true">⚠️</div>
-      <h2 class="error-title">Connection Error</h2>
+      <h2 class="error-title">The search API did not respond</h2>
       <p class="error-desc" id="errorDesc"></p>
-      <button class="retry-btn" id="retryBtn">Try Again</button>
+      <button class="retry-btn" id="retryBtn">Run the search again</button>
     </div>
 
     <div class="empty-state" id="emptyState" hidden role="status">
-      <div class="empty-icon" aria-hidden="true">🔍</div>
-      <h2 class="empty-title">No results found</h2>
-      <p class="empty-desc">Try rephrasing your query or using different keywords.</p>
+      <h2 class="empty-title">Nothing matched that query</h2>
+      <p class="empty-desc">Rephrase it, or use the words an encyclopedia would use.</p>
     </div>
 
     <div class="results-list" id="resultsList" role="list"></div>
@@ -98,8 +75,8 @@
 
   <footer class="footer" id="footer">
     <p>
-      <span class="footer-logo">WikiSearch</span> · SEG301 Final Project ·
-      <a href="http://127.0.0.1:8000/docs" target="_blank" rel="noopener" class="footer-link">API Docs</a>
+      <span class="footer-logo">WikiSearch</span> · SEG301 final project ·
+      <a href="http://127.0.0.1:8000/docs" target="_blank" rel="noopener" class="footer-link">API docs</a>
       · <a href="http://127.0.0.1:8000/health" target="_blank" rel="noopener" class="footer-link">Health</a>
     </p>
   </footer>
@@ -115,10 +92,9 @@
         </div>
         <div class="card-header-actions">
           <span class="source-badge" title="Content source"></span>
-          <button class="expand-btn" aria-expanded="false" aria-label="Expand article content">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
+          <button class="expand-btn" aria-expanded="false" aria-label="Read the article text">
+            <span class="expand-btn-text">Read</span>
+            <span class="caret" aria-hidden="true"></span>
           </button>
         </div>
       </div>
@@ -128,49 +104,26 @@
 
         <div class="score-dashboard">
 
-          <!-- 1. Final RRF Score -->
           <div class="score-card"
                title="Final score từ Asymmetric Weighted RRF — cao hơn = liên quan hơn">
-            <div class="score-label">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-              </svg>
-              Final Score
-            </div>
+            <div class="score-label">Final score</div>
             <div class="score-value final-score-val"></div>
             <div class="score-bar"><div class="score-fill final-fill"></div></div>
           </div>
 
-          <!-- 2. Cosine Score + rank -->
           <div class="score-card"
                title="Best chunk Cosine distance từ ChromaDB — thấp hơn = liên quan hơn. N/A nếu bài chỉ đến từ BM25.">
-            <div class="score-label">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
-              </svg>
-              Cosine Score
-            </div>
+            <div class="score-label">Cosine distance</div>
             <div class="score-value-row">
               <div class="score-value cosine-score-val"></div>
-              <!-- rank badge xuất hiện bên cạnh score -->
               <span class="pool-rank-badge cosine-rank-badge"></span>
             </div>
             <div class="score-bar"><div class="score-fill cosine-fill"></div></div>
           </div>
 
-          <!-- 3. BM25 Score + rank -->
           <div class="score-card"
                title="BM25 keyword relevance score — cao hơn = khớp keyword hơn. N/A nếu không có trong BM25 pool.">
-            <div class="score-label">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="20" x2="18" y2="10"/>
-                <line x1="12" y1="20" x2="12" y2="4"/>
-                <line x1="6" y1="20" x2="6" y2="14"/>
-              </svg>
-              BM25 Score
-            </div>
+            <div class="score-label">BM25</div>
             <div class="score-value-row">
               <div class="score-value bm25-score-val"></div>
               <span class="pool-rank-badge bm25-rank-badge"></span>
@@ -178,15 +131,8 @@
             <div class="score-bar"><div class="score-fill bm25-fill"></div></div>
           </div>
 
-          <!-- 4. Chunks -->
           <div class="score-card chunks-card" title="Số chunk khớp từ vector search">
-            <div class="score-label">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-                <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-              </svg>
-              Chunks
-            </div>
+            <div class="score-label">Matched chunks</div>
             <div class="score-value chunks-val"></div>
           </div>
 
@@ -195,20 +141,14 @@
 
       <div class="card-expanded" hidden>
         <div class="expand-tabs">
-          <button class="expand-tab active" data-tab="rendered">📄 Rendered</button>
-          <button class="expand-tab" data-tab="raw">⌨️ Raw</button>
+          <button class="expand-tab active" data-tab="rendered">Article</button>
+          <button class="expand-tab" data-tab="raw">Raw text</button>
         </div>
         <div class="expanded-content markdown-body" data-view="rendered"></div>
         <div class="expanded-content raw-content" data-view="raw" hidden></div>
         <div class="expand-footer">
           <span class="text-source-badge"></span>
-          <a class="open-wiki-btn" href="#" target="_blank" rel="noopener noreferrer">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-              <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
-            Open on Wikipedia
-          </a>
+          <a class="open-wiki-btn" href="#" target="_blank" rel="noopener noreferrer">Open on Wikipedia</a>
         </div>
       </div>
     </article>
