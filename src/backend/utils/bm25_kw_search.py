@@ -3,7 +3,7 @@ import re
 from collections import Counter
 from src.backend.utils.data_loader import load_articles
 
-class BM25Search:
+class BM25Search: #Nhom su dung Okapi BM25
     def __init__(self, json_path:str):
         self.corpus = load_articles(json_path)
         self.k1 = 1.5

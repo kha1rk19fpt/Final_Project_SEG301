@@ -8,7 +8,7 @@ COSINE_THRESHOLD = 0.658 #goc cosine 70 -> gan nhu la xa ngu nghia
 W_SPARSE_HIGH = 1.0
 W_DENSE_HIGH = 1.0
 W_SPARSE_LOW = 0.1
-LAMBDA = 2.0932 #NEW: 1,6093 --- con dang trong qua trinh fine-tune
+LAMBDA = 2.0932 
 
 TITLE_BOOST_BETA = 0.35 #muc giam toi da cua weighted_score khi query trung khop hoan toan voi title
 TITLE_STOP_WORDS = {'what', 'is', 'the', 'a', 'an', 'how', 'why', 'who', 'does', 'do', 'are', 'was', 'were', 'about', 'long', 'in', 'of', 'and', 'to', 'for'}
