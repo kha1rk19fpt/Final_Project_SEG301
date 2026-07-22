@@ -92,7 +92,7 @@ Backend khởi động mất khoảng **3-6p** (nạp model + BM25 index).
 
 **Bước 1:** nhập lệnh này vào terminal
 ```bash
-set DATA_PROFILE=eval #sử dụng data đánh giá riêng
+$env:DATA_PROFILE = "eval" #sử dụng data đánh giá riêng và trên khung terminal powershell
 uvicorn src.backend.main:app --port 8001 #sử dụng cổng backend riêng
 ```
 
