@@ -32,7 +32,7 @@ Hệ thống có **2 bộ dữ liệu độc lập**, tùy chỉnh ở `DATA_PRO
 
 Tải toàn bộ thư mục `data/` tại đây và đặt vào gốc project:
 
-`https://drive.google.com/drive/folders/1XXxsdiq8Z5xtVhfn3lMfn0Ymg8o4FHq4?usp=sharing`
+`https://drive.google.com/drive/folders/1PlhOBzTwfR7-A_jGJTObSS3X4yuzPQA1?usp=drive_link`
 
 ### Cách 2 - Tự crawl + embedding
 
